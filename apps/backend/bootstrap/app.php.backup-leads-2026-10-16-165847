@@ -1,0 +1,135 @@
+<?php
+
+use App\Exceptions\ApiException;
+use Illuminate\Foundation\Application;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Foundation\Configuration\Exceptions;
+use Illuminate\Foundation\Configuration\Middleware;
+use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
+use Symfony\Component\HttpKernel\Exception\HttpException;
+use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
+use Illuminate\Auth\AuthenticationException;
+
+return Application::configure(basePath: dirname(__DIR__))
+    ->withRouting(
+        web: __DIR__.'/../routes/web.php',
+        api: __DIR__.'/../routes/api.php',
+        commands: __DIR__.'/../routes/console.php',
+        health: '/up',
+        then: function () {
+            Route::middleware('api')->group(base_path('app/Modules/WordPress/Routes/webhooks.php'));
+            Route::middleware('api')->group(base_path('app/Modules/Tour/Routes/tours.php'));
+        },
+    )
+    ->withMiddleware(function (Middleware $middleware) {
+        // RBAC Middlewares
+        $middleware->alias([
+            'role' => \App\Http\Middleware\CheckRole::class,
+            'permission' => \App\Http\Middleware\CheckPermission::class,
+            'log.admin' => \App\Http\Middleware\LogAdminAccess::class,
+        ]);
+
+        $middleware->append(\App\Http\Middleware\LogApiRequests::class);
+        //
+    })
+    ->withExceptions(function (Exceptions $exceptions) {
+
+        // === Render ApiException as standard JSON ===
+        $exceptions->render(function (ApiException $e, Request $request) {
+            $includeTechnical = app()->hasDebugModeEnabled();
+
+            return response()->json(
+                $e->toArray($includeTechnical),
+                $e->getHttpStatus()
+            );
+        });
+
+        // === Convert ValidationException to standard format ===
+        $exceptions->render(function (ValidationException $e, Request $request) {
+            if (! $request->expectsJson() && ! $request->is('api/*')) {
+                return null; // let default handler deal with web
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => \App\Core\ApiErrorCode::VALIDATION_FAILED->value,
+                    'message' => 'داده‌های ارسالی معتبر نیستند.',
+                    'details' => $e->errors(),
+                ],
+            ], 422);
+        });
+
+        // === Convert AuthenticationException ===
+        $exceptions->render(function (AuthenticationException $e, Request $request) {
+            if (! $request->expectsJson() && ! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => \App\Core\ApiErrorCode::UNAUTHENTICATED->value,
+                    'message' => 'ابتدا وارد حساب کاربری خود شوید.',
+                ],
+            ], 401);
+        });
+
+        // === Convert NotFoundHttpException ===
+        $exceptions->render(function (NotFoundHttpException $e, Request $request) {
+            if (! $request->expectsJson() && ! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => \App\Core\ApiErrorCode::NOT_FOUND->value,
+                    'message' => 'آدرس درخواستی یافت نشد.',
+                ],
+            ], 404);
+        });
+
+        // === Convert generic HttpException ===
+        $exceptions->render(function (HttpException $e, Request $request) {
+            if (! $request->expectsJson() && ! $request->is('api/*')) {
+                return null;
+            }
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => \App\Core\ApiErrorCode::SERVER_ERROR->value,
+                    'message' => $e->getMessage() ?: 'خطای سرور',
+                ],
+            ], $e->getStatusCode());
+        });
+
+        // === Catch-all for unexpected exceptions (only in API routes) ===
+        $exceptions->render(function (Throwable $e, Request $request) {
+            if (! $request->is('api/*') && ! $request->expectsJson()) {
+                return null;
+            }
+
+            // Log the technical details
+            logger()->error('API Unhandled Exception', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+
+            $includeTechnical = app()->hasDebugModeEnabled();
+
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => \App\Core\ApiErrorCode::SERVER_ERROR->value,
+                    'message' => 'خطای غیرمنتظره سرور. لطفاً بعداً تلاش کنید.',
+                    'technical' => $includeTechnical ? $e->getMessage() : null,
+                ],
+            ], 500);
+        });
+
+    })->create();

@@ -1,0 +1,311 @@
+<?php
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\OrderResource\Pages;
+use App\Filament\Admin\Resources\OrderResource\RelationManagers;
+use App\Modules\Order\Models\Order;
+use App\Modules\Order\Models\OrderItem;
+use App\Modules\Order\Models\OrderPassenger;
+use App\Modules\Payment\Models\Payment;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Resources\Resource;
+use Filament\Schemas\Components\Section;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\BadgeColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class OrderResource extends Resource
+{
+    protected static ?string $model = Order::class;
+
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-shopping-cart';
+    protected static ?string $navigationLabel = 'سفارش‌ها';
+    protected static \UnitEnum|string|null $navigationGroup = 'مدیریت مالی';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $modelLabel = 'سفارش';
+    protected static ?string $pluralModelLabel = 'سفارش‌ها';
+    protected static ?string $slug = 'orders';
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Section::make('اطلاعات اصلی سفارش')->schema([
+                TextInput::make('code')->label('کد سفارش')->disabled()->columnSpan(1),
+                Select::make('type')->label('نوع سفارش')->options([
+                    'tour' => '🌍 تور',
+                    'hotel' => '🏨 هتل',
+                    'flight' => '✈️ پرواز',
+                    'visa' => '🛂 ویزا',
+                    'custom' => '⚙️ سفارشی',
+                ])->required()->disabled(fn ($record) => $record !== null),
+                Select::make('status')->label('وضعیت سفارش')->options(self::getStatusOptions())->required(),
+                Select::make('user_id')->label('مشتری')->relationship('user', 'name')->searchable()->preload()->required(),
+                TextInput::make('source')->label('منبع سفارش')->default('manual')->disabled(),
+                TextInput::make('currency')->label('واحد پول')->default('IRR')->disabled(),
+            ])->columns(3),
+
+            Section::make('اطلاعات مالی')->schema([
+                TextInput::make('subtotal')->label('مبلغ پایه')->numeric()->prefix('IRR')->disabled(),
+                TextInput::make('discount_amount')->label('تخفیف')->numeric()->prefix('IRR')->default(0),
+                TextInput::make('tax_amount')->label('مالیات')->numeric()->prefix('IRR')->default(0),
+                TextInput::make('total_amount')->label('مبلغ کل')->numeric()->prefix('IRR')->disabled()->color('success')->weight('bold'),
+                TextInput::make('paid_amount')->label('مبلغ پرداختی')->numeric()->prefix('IRR')->default(0),
+                TextInput::make('due_amount')->label('مانده بدهی')->numeric()->prefix('IRR')->disabled()->color('danger'),
+            ])->columns(3),
+
+            Section::make('تاریخ‌های مهم')->schema([
+                DatePicker::make('travel_start_date')->label('تاریخ شروع سفر')->native(false)->displayFormat('Y/m/d'),
+                DatePicker::make('travel_end_date')->label('تاریخ پایان سفر')->native(false)->displayFormat('Y/m/d'),
+                Placeholder::make('created_at')->label('تاریخ ایجاد')->content(fn ($record) => $record?->created_at?->format('Y/m/d H:i') ?? '—'),
+                Placeholder::make('confirmed_at')->label('تاریخ تأیید')->content(fn ($record) => $record?->confirmed_at?->format('Y/m/d H:i') ?? '—'),
+                Placeholder::make('completed_at')->label('تاریخ تکمیل')->content(fn ($record) => $record?->completed_at?->format('Y/m/d H:i') ?? '—'),
+                Placeholder::make('cancelled_at')->label('تاریخ لغو')->content(fn ($record) => $record?->cancelled_at?->format('Y/m/d H:i') ?? '—'),
+            ])->columns(3),
+
+            Section::make('یادداشت‌ها')->schema([
+                Textarea::make('customer_notes')->label('یادداشت مشتری')->rows(3)->columnSpan(1),
+                Textarea::make('admin_notes')->label('یادداشت ادمین')->rows(3)->columnSpan(1),
+            ])->columns(2),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('code')->label('کد سفارش')->searchable()->sortable()->badge()->color('primary')->weight('bold'),
+                TextColumn::make('type')->label('نوع')->badge()
+                    ->formatStateUsing(fn ($state) => self::getTypeLabel($state))
+                    ->color(fn ($state) => self::getTypeColor($state))
+                    ->sortable(),
+                TextColumn::make('user.name')->label('مشتری')->searchable()->sortable()->limit(20),
+                TextColumn::make('user.phone')->label('موبایل')->searchable()->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('status')->label('وضعیت')->badge()
+                    ->formatStateUsing(fn ($state) => self::getStatusOptions()[self::getStatusValue($state)] ?? self::getStatusValue($state))
+                    ->color(fn ($state) => self::getStatusColor($state))
+                    ->sortable(),
+                TextColumn::make('total_amount')->label('مبلغ کل')->money('IRR', true)->sortable()->weight('bold'),
+                TextColumn::make('paid_amount')->label('پرداختی')->money('IRR', true)->sortable()->color('success')->toggleable()->default(0)->placeholder('۰'),
+                TextColumn::make('due_amount')->label('مانده')->money('IRR', true)->sortable()->color('danger')->toggleable(isToggledHiddenByDefault: true)->default(0)->placeholder('۰'),
+                TextColumn::make('items_count')->label('آیتم‌ها')->counts('items')->badge()->color('info')->sortable(),
+                TextColumn::make('passengers_count')->label('مسافران')->counts('passengers')->badge()->color('warning')->sortable(),
+                TextColumn::make('payments_count')->label('پرداخت‌ها')->counts('payments')->badge()->color('success')->sortable()->toggleable(),
+                TextColumn::make('travel_start_date')->label('شروع سفر')->date('Y/m/d')->sortable()->toggleable()->placeholder('—'),
+                TextColumn::make('created_at')->label('تاریخ ایجاد')->dateTime('Y/m/d H:i')->sortable()->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                SelectFilter::make('type')->label('نوع سفارش')->options([
+                    'tour' => '🌍 تور',
+                    'hotel' => '🏨 هتل',
+                    'flight' => '✈️ پرواز',
+                    'visa' => '🛂 ویزا',
+                    'custom' => '⚙️ سفارشی',
+                ]),
+                SelectFilter::make('status')->label('وضعیت')->options(self::getStatusOptions()),
+                Filter::make('amount_range')->label('بازه مبلغ')->form([
+                    TextInput::make('min_amount')->label('از مبلغ')->numeric()->prefix('IRR'),
+                    TextInput::make('max_amount')->label('تا مبلغ')->numeric()->prefix('IRR'),
+                ])->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when($data['min_amount'] ?? null, fn (Builder $q, $v): Builder => $q->where('total_amount', '>=', $v))
+                        ->when($data['max_amount'] ?? null, fn (Builder $q, $v): Builder => $q->where('total_amount', '<=', $v));
+                }),
+                Filter::make('date_range')->label('بازه تاریخ')->form([
+                    DatePicker::make('from_date')->label('از تاریخ'),
+                    DatePicker::make('to_date')->label('تا تاریخ'),
+                ])->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when($data['from_date'] ?? null, fn (Builder $q, $v): Builder => $q->whereDate('created_at', '>=', $v))
+                        ->when($data['to_date'] ?? null, fn (Builder $q, $v): Builder => $q->whereDate('created_at', '<=', $v));
+                }),
+                TernaryFilter::make('has_payments')->label('وضعیت پرداخت')
+                    ->trueLabel('پرداخت شده')
+                    ->falseLabel('پرداخت نشده')
+                    ->queries(
+                        true: fn (Builder $q) => $q->where('paid_amount', '>', 0),
+                        false: fn (Builder $q) => $q->where('paid_amount', 0),
+                        blank: fn (Builder $q) => $q,
+                    ),
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('change_status')
+                    ->label('تغییر وضعیت')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->form([
+                        Select::make('status')
+                            ->label('وضعیت جدید')
+                            ->options(self::getStatusOptions())
+                            ->required(),
+                        Textarea::make('reason')->label('دلیل تغییر')->rows(2),
+                    ])
+                    ->action(function (Order $record, array $data): void {
+                        $record->update([
+                            'status' => $data['status'],
+                            'admin_notes' => ($record->admin_notes ? $record->admin_notes . "\n" : '') 
+                                . '[' . now()->format('Y-m-d H:i') . '] ' . ($data['reason'] ?? 'تغییر وضعیت'),
+                        ]);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('وضعیت سفارش تغییر کرد')
+                            ->body("سفارش {$record->code} به وضعیت " . self::getStatusOptions()[$data['status']] . " تغییر کرد.")
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('view_payments')
+                    ->label('پرداخت‌ها')
+                    ->icon('heroicon-o-credit-card')
+                    ->color('info')
+                    ->url(fn (Order $record): string => route('filament.admin.resources.payments.index', ['tableFilters[order_id][value]' => $record->id])),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->striped()
+            ->persistFiltersInSession()
+            ->paginated([10, 25, 50, 100]);
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\ItemsRelationManager::class,
+            RelationManagers\PassengersRelationManager::class,
+            RelationManagers\PaymentsRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListOrders::route('/'),
+            'create' => Pages\CreateOrder::route('/create'),
+            'view' => Pages\ViewOrder::route('/{record}'),
+            'edit' => Pages\EditOrder::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $pending = static::getModel()::where('status', 'pending_payment')->count();
+        return $pending > 0 ? (string) $pending : null;
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'warning';
+    }
+
+    public static function getNavigationBadgeTooltip(): ?string
+    {
+        return 'سفارش‌های در انتظار پرداخت';
+    }
+
+    // Helper methods
+    protected static function getStatusOptions(): array
+    {
+        return [
+            'draft' => '📝 پیش‌نویس',
+            'pending_payment' => '⏳ در انتظار پرداخت',
+            'paid' => '✅ پرداخت شده',
+            'confirmed' => '✓ تأیید شده',
+            'processing' => '⚙️ در حال پردازش',
+            'completed' => '🎉 تکمیل شده',
+            'cancelled' => '❌ لغو شده',
+            'refunded' => '💸 مسترد شده',
+            'failed' => '⚠️ ناموفق',
+            'expired' => '⏰ منقضی شده',
+        ];
+    }
+
+    protected static function getStatusValue($status): string
+    {
+        if (empty($status)) {
+            return '';
+        }
+        
+        if ($status instanceof \BackedEnum) {
+            return $status->value;
+        }
+        
+        return (string) $status;
+    }
+
+    protected static function getStatusColor($status): string
+    {
+        if (empty($status)) {
+            return 'gray';
+        }
+        
+        $statusValue = self::getStatusValue($status);
+        
+        return match ($statusValue) {
+            'draft' => 'gray',
+            'pending_payment' => 'warning',
+            'paid', 'confirmed' => 'success',
+            'processing' => 'info',
+            'completed' => 'success',
+            'cancelled', 'failed' => 'danger',
+            'refunded' => 'purple',
+            'expired' => 'gray',
+            default => 'gray',
+        };
+    }
+
+    protected static function getTypeLabel($type): string
+    {
+        if (empty($type)) {
+            return 'نامشخص';
+        }
+        
+        $typeValue = $type instanceof \BackedEnum ? $type->value : (string) $type;
+        
+        return match ($typeValue) {
+            'tour' => '🌍 تور',
+            'hotel' => '🏨 هتل',
+            'flight' => '✈️ پرواز',
+            'visa' => '🛂 ویزا',
+            'custom' => '⚙️ سفارشی',
+            default => $typeValue,
+        };
+    }
+
+    protected static function getTypeColor($type): string
+    {
+        if (empty($type)) {
+            return 'gray';
+        }
+        
+        $typeValue = $type instanceof \BackedEnum ? $type->value : (string) $type;
+        
+        return match ($typeValue) {
+            'tour' => 'warning',
+            'hotel' => 'success',
+            'flight' => 'info',
+            'visa' => 'primary',
+            'custom' => 'gray',
+            default => 'gray',
+        };
+    }
+}

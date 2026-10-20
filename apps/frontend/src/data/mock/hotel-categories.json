@@ -1,0 +1,74 @@
+{
+  "regions": [
+    {
+      "id": 1,
+      "name": "خاورمیانه",
+      "slug": "middle-east",
+      "image": "/images/categories/middle-east.jpg"
+    },
+    {
+      "id": 2,
+      "name": "اروپا",
+      "slug": "europe",
+      "image": "/images/categories/europe.jpg"
+    },
+    {
+      "id": 3,
+      "name": "آسیای شرقی",
+      "slug": "east-asia",
+      "image": "/images/categories/east-asia.jpg"
+    },
+    {
+      "id": 4,
+      "name": "آمریکای شمالی",
+      "slug": "north-america",
+      "image": "/images/categories/north-america.jpg"
+    }
+  ],
+  "countries": [
+    { "id": 101, "regionId": 1, "name": "ترکیه", "slug": "turkey", "image": "/images/countries/turkey.jpg" },
+    { "id": 102, "regionId": 1, "name": "امارات", "slug": "uae", "image": "/images/countries/uae.jpg" },
+    { "id": 103, "regionId": 1, "name": "عمان", "slug": "oman", "image": "/images/countries/oman.jpg" },
+    { "id": 104, "regionId": 1, "name": "قطر", "slug": "qatar", "image": "/images/countries/qatar.jpg" },
+    { "id": 105, "regionId": 1, "name": "گرجستان", "slug": "georgia", "image": "/images/countries/georgia.jpg" },
+    { "id": 201, "regionId": 2, "name": "فرانسه", "slug": "france", "image": "/images/countries/france.jpg" },
+    { "id": 202, "regionId": 2, "name": "ایتالیا", "slug": "italy", "image": "/images/countries/italy.jpg" },
+    { "id": 203, "regionId": 2, "name": "اسپانیا", "slug": "spain", "image": "/images/countries/spain.jpg" },
+    { "id": 204, "regionId": 2, "name": "آلمان", "slug": "germany", "image": "/images/countries/germany.jpg" },
+    { "id": 301, "regionId": 3, "name": "تایلند", "slug": "thailand", "image": "/images/countries/thailand.jpg" },
+    { "id": 302, "regionId": 3, "name": "مالزی", "slug": "malaysia", "image": "/images/countries/malaysia.jpg" },
+    { "id": 303, "regionId": 3, "name": "سنگاپور", "slug": "singapore", "image": "/images/countries/singapore.jpg" },
+    { "id": 401, "regionId": 4, "name": "کانادا", "slug": "canada", "image": "/images/countries/canada.jpg" },
+    { "id": 402, "regionId": 4, "name": "آمریکا", "slug": "usa", "image": "/images/countries/usa.jpg" }
+  ],
+  "cities": [
+    { "id": 1001, "countryId": 101, "name": "استانبول", "slug": "istanbul", "image": "/images/cities/istanbul.jpg", "count": 245 },
+    { "id": 1002, "countryId": 101, "name": "آنتالیا", "slug": "antalya", "image": "/images/cities/antalya.jpg", "count": 189 },
+    { "id": 1003, "countryId": 101, "name": "آنکارا", "slug": "ankara", "image": "/images/cities/ankara.jpg", "count": 67 },
+    { "id": 1004, "countryId": 101, "name": "کوش‌آداسی", "slug": "kusadasi", "image": "/images/cities/kusadasi.jpg", "count": 54 },
+    { "id": 1005, "countryId": 101, "name": "بدروم", "slug": "bodrum", "image": "/images/cities/bodrum.jpg", "count": 42 },
+    { "id": 1006, "countryId": 102, "name": "دبی", "slug": "dubai", "image": "/images/cities/dubai.jpg", "count": 312 },
+    { "id": 1007, "countryId": 102, "name": "ابوظبی", "slug": "abu-dhabi", "image": "/images/cities/abu-dhabi.jpg", "count": 98 },
+    { "id": 1008, "countryId": 102, "name": "شارجه", "slug": "sharjah", "image": "/images/cities/sharjah.jpg", "count": 45 },
+    { "id": 1009, "countryId": 103, "name": "مسقط", "slug": "muscat", "image": "/images/cities/muscat.jpg", "count": 32 },
+    { "id": 1010, "countryId": 104, "name": "دوحه", "slug": "doha", "image": "/images/cities/doha.jpg", "count": 58 },
+    { "id": 1011, "countryId": 105, "name": "تفلیس", "slug": "tbilisi", "image": "/images/cities/tbilisi.jpg", "count": 76 },
+    { "id": 1012, "countryId": 105, "name": "باتومی", "slug": "batumi", "image": "/images/cities/batumi.jpg", "count": 43 },
+    { "id": 2001, "countryId": 201, "name": "پاریس", "slug": "paris", "image": "/images/cities/paris.jpg", "count": 487 },
+    { "id": 2002, "countryId": 201, "name": "نیس", "slug": "nice", "image": "/images/cities/nice.jpg", "count": 98 },
+    { "id": 2003, "countryId": 202, "name": "رم", "slug": "rome", "image": "/images/cities/rome.jpg", "count": 321 },
+    { "id": 2004, "countryId": 202, "name": "میلان", "slug": "milan", "image": "/images/cities/milan.jpg", "count": 156 },
+    { "id": 2005, "countryId": 203, "name": "بارسلون", "slug": "barcelona", "image": "/images/cities/barcelona.jpg", "count": 234 },
+    { "id": 2006, "countryId": 203, "name": "مادرید", "slug": "madrid", "image": "/images/cities/madrid.jpg", "count": 178 },
+    { "id": 2007, "countryId": 204, "name": "برلین", "slug": "berlin", "image": "/images/cities/berlin.jpg", "count": 145 },
+    { "id": 3001, "countryId": 301, "name": "بانکوک", "slug": "bangkok", "image": "/images/cities/bangkok.jpg", "count": 412 },
+    { "id": 3002, "countryId": 301, "name": "پاتایا", "slug": "pattaya", "image": "/images/cities/pattaya.jpg", "count": 187 },
+    { "id": 3003, "countryId": 301, "name": "پوکت", "slug": "phuket", "image": "/images/cities/phuket.jpg", "count": 223 },
+    { "id": 3004, "countryId": 302, "name": "کوالالامپور", "slug": "kuala-lumpur", "image": "/images/cities/kuala-lumpur.jpg", "count": 198 },
+    { "id": 3005, "countryId": 302, "name": "پنانگ", "slug": "penang", "image": "/images/cities/penang.jpg", "count": 87 },
+    { "id": 3006, "countryId": 303, "name": "سنگاپور", "slug": "singapore-city", "image": "/images/cities/singapore.jpg", "count": 267 },
+    { "id": 4001, "countryId": 401, "name": "تورنتو", "slug": "toronto", "image": "/images/cities/toronto.jpg", "count": 134 },
+    { "id": 4002, "countryId": 402, "name": "نیویورک", "slug": "new-york", "image": "/images/cities/new-york.jpg", "count": 389 },
+    { "id": 4003, "countryId": 402, "name": "لس‌آنجلس", "slug": "los-angeles", "image": "/images/cities/los-angeles.jpg", "count": 212 }
+  ]
+}

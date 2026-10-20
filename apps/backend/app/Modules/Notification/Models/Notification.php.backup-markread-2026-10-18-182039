@@ -1,0 +1,232 @@
+<?php
+
+namespace App\Modules\Notification\Models;
+
+use App\Models\User;
+use App\Modules\Notification\Enums\NotificationChannel;
+use App\Modules\Notification\Enums\NotificationPriority;
+use App\Modules\Notification\Enums\NotificationStatus;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
+
+class Notification extends Model
+{
+    use SoftDeletes;
+
+    protected $fillable = [
+        'uuid', 'code', 'event_type', 'channel', 'user_id',
+        'recipient', 'recipient_name', 'subject', 'content', 'variables',
+        'template_id', 'status', 'attempts', 'max_attempts', 'next_retry_at',
+        'provider_message_id', 'provider_status', 'error_message', 'provider_response',
+        'priority', 'metadata', 'notifiable_type', 'notifiable_id',
+        'scheduled_at', 'sent_at', 'delivered_at',
+    ];
+
+    protected $casts = [
+        'channel' => NotificationChannel::class,
+        'status' => NotificationStatus::class,
+        'priority' => NotificationPriority::class,
+        'variables' => 'array',
+        'metadata' => 'array',
+        'attempts' => 'integer',
+        'max_attempts' => 'integer',
+        'next_retry_at' => 'datetime',
+        'scheduled_at' => 'datetime',
+        'sent_at' => 'datetime',
+        'delivered_at' => 'datetime',
+    ];
+
+    protected $hidden = [
+        'provider_response',
+    ];
+
+    protected static function boot(): void
+    {
+        parent::boot();
+
+        static::creating(function (Notification $notification) {
+            if (empty($notification->uuid)) {
+                $notification->uuid = (string) Str::uuid();
+            }
+            if (empty($notification->code)) {
+                $notification->code = self::generateUniqueCode();
+            }
+        });
+    }
+
+    // === Relationships ===
+    public function user(): BelongsTo
+    {
+        return $this->belongsTo(User::class);
+    }
+
+    public function template(): BelongsTo
+    {
+        return $this->belongsTo(NotificationTemplate::class);
+    }
+
+    public function logs(): HasMany
+    {
+        return $this->hasMany(NotificationLog::class)->orderByDesc('logged_at');
+    }
+
+    public function notifiable(): MorphTo
+    {
+        return $this->morphTo();
+    }
+
+    // === Scopes ===
+    public function scopePending($query)
+    {
+        return $query->where('status', NotificationStatus::PENDING);
+    }
+
+    public function scopeSent($query)
+    {
+        return $query->where('status', NotificationStatus::SENT);
+    }
+
+    public function scopeFailed($query)
+    {
+        return $query->where('status', NotificationStatus::FAILED);
+    }
+
+    public function scopeForUser($query, int $userId)
+    {
+        return $query->where('user_id', $userId);
+    }
+
+    public function scopeByChannel($query, NotificationChannel $channel)
+    {
+        return $query->where('channel', $channel);
+    }
+
+    public function scopeByEvent($query, string $eventType)
+    {
+        return $query->where('event_type', $eventType);
+    }
+
+    public function scopeUnread($query)
+    {
+        return $query->where('channel', NotificationChannel::INTERNAL)
+            ->whereNull('delivered_at');
+    }
+
+    public function scopeNeedsRetry($query)
+    {
+        return $query->whereIn('status', [NotificationStatus::FAILED, NotificationStatus::RETRYING])
+            ->whereNotNull('next_retry_at')
+            ->where('next_retry_at', '<=', now())
+            ->whereColumn('attempts', '<', 'max_attempts');
+    }
+
+    // === Methods ===
+    public function isTerminal(): bool
+    {
+        return $this->status->isTerminal();
+    }
+
+    public function isSuccessful(): bool
+    {
+        return $this->status->isSuccessful();
+    }
+
+    public function canRetry(): bool
+    {
+        return $this->attempts < $this->max_attempts
+            && !$this->isTerminal();
+    }
+
+    public function markAsQueued(): self
+    {
+        $this->update(['status' => NotificationStatus::QUEUED]);
+        return $this;
+    }
+
+    public function markAsProcessing(): self
+    {
+        $this->update([
+            'status' => NotificationStatus::PROCESSING,
+            'attempts' => $this->attempts + 1,
+        ]);
+        return $this;
+    }
+
+    public function markAsSent(?string $providerMessageId = null): self
+    {
+        $this->update([
+            'status' => NotificationStatus::SENT,
+            'sent_at' => now(),
+            'provider_message_id' => $providerMessageId,
+        ]);
+        return $this;
+    }
+
+    public function markAsDelivered(): self
+    {
+        $this->update([
+            'status' => NotificationStatus::DELIVERED,
+            'delivered_at' => now(),
+        ]);
+        return $this;
+    }
+
+    public function markAsFailed(string $error, bool $willRetry = false): self
+    {
+        $newStatus = $willRetry ? NotificationStatus::RETRYING : NotificationStatus::FAILED;
+        $nextRetry = $willRetry ? $this->calculateNextRetry() : null;
+
+        $this->update([
+            'status' => $newStatus,
+            'error_message' => $error,
+            'next_retry_at' => $nextRetry,
+        ]);
+        return $this;
+    }
+
+    public function markAsCancelled(): self
+    {
+        $this->update(['status' => NotificationStatus::CANCELLED]);
+        return $this;
+    }
+
+    /**
+     * محاسبه زمان تلاش بعدی (exponential backoff)
+     */
+    private function calculateNextRetry(): \Carbon\Carbon
+    {
+        $delays = [30, 300, 1800, 3600]; // 30s, 5m, 30m, 1h
+        $delay = $delays[min($this->attempts, count($delays) - 1)];
+        return now()->addSeconds($delay);
+    }
+
+    // === Accessors ===
+    public function getChannelLabelAttribute(): string
+    {
+        return $this->channel->label();
+    }
+
+    public function getStatusLabelAttribute(): string
+    {
+        return $this->status->label();
+    }
+
+    public function getStatusColorAttribute(): string
+    {
+        return $this->status->color();
+    }
+
+    // === Static ===
+    public static function generateUniqueCode(): string
+    {
+        do {
+            $code = 'NOT-' . now()->format('ymd') . '-' . strtoupper(Str::random(4));
+        } while (self::where('code', $code)->exists());
+
+        return $code;
+    }
+}

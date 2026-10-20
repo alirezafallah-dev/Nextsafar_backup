@@ -1,0 +1,490 @@
+<?php
+
+namespace App\Modules\Tour\Models;
+
+use App\Models\User;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Str;
+
+class Tour extends Model
+{
+    use SoftDeletes;
+
+    protected $fillable = [
+        'code',
+        'slug',
+        'title',
+        'subtitle',
+        'summary',
+        'description',
+        'destination_country',
+        'destination_city',
+        'origin_city',
+        'duration_nights',
+        'duration_days',
+        'transport_type',
+        'airline',
+        'status',
+        'is_featured',
+        'is_active',
+        'min_price',
+        'currency',
+        'category_id',
+        'seo_title',
+        'seo_description',
+        'seo_keywords',
+        'meta_tags',
+        'cancellation_policy',
+        'important_notes',
+        'required_documents',
+        'min_age',
+        'max_age',
+        'created_by',
+        'updated_by',
+        'published_at',
+    ];
+
+    protected $casts = [
+        'is_featured' => 'boolean',
+        'is_active' => 'boolean',
+        'min_price' => 'integer',
+        'duration_nights' => 'integer',
+        'duration_days' => 'integer',
+        'min_age' => 'integer',
+        'max_age' => 'integer',
+        'meta_tags' => 'array',
+        'required_documents' => 'array',
+        'published_at' => 'datetime',
+    ];
+
+    // === Status Constants ===
+    public const STATUS_DRAFT = 'draft';
+    public const STATUS_READY = 'ready_to_publish';
+    public const STATUS_PUBLISHED = 'published';
+    public const STATUS_ON_SALE = 'on_sale';
+    public const STATUS_SOLD_OUT = 'sold_out';
+    public const STATUS_EXPIRED = 'expired';
+    public const STATUS_CANCELLED = 'cancelled';
+    public const STATUS_INACTIVE = 'inactive';
+
+    public const ALL_STATUSES = [
+        self::STATUS_DRAFT,
+        self::STATUS_READY,
+        self::STATUS_PUBLISHED,
+        self::STATUS_ON_SALE,
+        self::STATUS_SOLD_OUT,
+        self::STATUS_EXPIRED,
+        self::STATUS_CANCELLED,
+        self::STATUS_INACTIVE,
+    ];
+
+    // === Boot ===
+
+    protected static function boot()
+    {
+        // Generate unique code before creating
+        static::creating(function (Tour $tour) {
+            if (empty($tour->code)) {
+                $tour->code = self::generateUniqueCode();
+            }
+            if (empty($tour->slug) && !empty($tour->title)) {
+                $tour->slug = self::generateUniqueSlug($tour->title);
+            }
+        });
+
+        // Save old slug if slug changed
+        static::updating(function (Tour $tour) {
+            if ($tour->isDirty('slug') && $tour->getOriginal('slug')) {
+                TourOldSlug::create([
+                    'tour_id' => $tour->id,
+                    'slug' => $tour->getOriginal('slug'),
+                    'changed_at' => now(),
+                ]);
+            }
+        });
+    }
+
+    // === Relationships ===
+
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(TourCategory::class, 'category_id');
+    }
+
+    public function dates(): HasMany
+    {
+        return $this->hasMany(TourDate::class)->orderBy('departure_date');
+    }
+
+    public function itineraries(): HasMany
+    {
+        return $this->hasMany(TourItinerary::class)->orderBy('day_number');
+    }
+
+    public function services(): HasMany
+    {
+        return $this->hasMany(TourService::class)->orderBy('sort_order');
+    }
+
+    public function includedServices(): HasMany
+    {
+        return $this->services()->where('type', TourService::TYPE_INCLUDED);
+    }
+
+    public function excludedServices(): HasMany
+    {
+        return $this->services()->where('type', TourService::TYPE_EXCLUDED);
+    }
+
+    public function tourHotels(): HasMany
+    {
+        return $this->hasMany(TourHotel::class)->orderBy('priority');
+    }
+
+    public function hotels(): BelongsToMany
+    {
+        return $this->belongsToMany(\App\Models\Hotel::class, 'tour_hotels')
+            ->withPivot('relation_type', 'priority', 'nights', 'room_type', 'notes')
+            ->withTimestamps();
+    }
+
+    public function mainHotel(): HasOne
+    {
+        return $this->hasOne(TourHotel::class)->where('relation_type', TourHotel::TYPE_MAIN);
+    }
+
+    public function destinations(): BelongsToMany
+    {
+        return $this->belongsToMany(TourDestination::class, 'tour_destination_map')
+            ->withPivot('day_number', 'sort_order')
+            ->withTimestamps();
+    }
+
+    public function media(): HasMany
+    {
+        return $this->hasMany(TourMedia::class)->orderBy('sort_order');
+    }
+
+    public function images(): HasMany
+    {
+        return $this->media()->where('type', TourMedia::TYPE_IMAGE);
+    }
+
+    public function coverImage(): HasOne
+    {
+        return $this->hasOne(TourMedia::class)->where('is_cover', true);
+    }
+
+    public function relatedTours(): HasMany
+    {
+        return $this->hasMany(TourRelation::class)->orderByDesc('priority');
+    }
+
+    public function similarTours(): HasMany
+    {
+        return $this->relatedTours()->where('relation_type', TourRelation::TYPE_SIMILAR);
+    }
+
+    public function oldSlugs(): HasMany
+    {
+        return $this->hasMany(TourOldSlug::class);
+    }
+
+    public function creator(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    public function updater(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'updated_by');
+    }
+
+    // === Scopes ===
+
+    public function scopePublished(Builder $query): Builder
+    {
+        return $query->whereIn('status', [
+            self::STATUS_PUBLISHED,
+            self::STATUS_ON_SALE,
+        ])->where('is_active', true);
+    }
+
+    public function scopeActive(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
+    }
+
+    public function scopeFeatured(Builder $query): Builder
+    {
+        return $query->where('is_featured', true);
+    }
+
+    public function scopeDraft(Builder $query): Builder
+    {
+        return $query->where('status', self::STATUS_DRAFT);
+    }
+
+    public function scopeByStatus(Builder $query, string $status): Builder
+    {
+        return $query->where('status', $status);
+    }
+
+    public function scopeByCategory(Builder $query, int $categoryId): Builder
+    {
+        return $query->where('category_id', $categoryId);
+    }
+
+    public function scopeByCountry(Builder $query, string $country): Builder
+    {
+        return $query->where('destination_country', $country);
+    }
+
+    public function scopeByCity(Builder $query, string $city): Builder
+    {
+        return $query->where('destination_city', $city);
+    }
+
+    public function scopeSearch(Builder $query, string $term): Builder
+    {
+        return $query->where(function ($q) use ($term) {
+            $q->where('title', 'ilike', "%{$term}%")
+                ->orWhere('summary', 'ilike', "%{$term}%")
+                ->orWhere('destination_country', 'ilike', "%{$term}%")
+                ->orWhere('destination_city', 'ilike', "%{$term}%");
+        });
+    }
+
+    public function scopePriceBetween(Builder $query, int $min, int $max): Builder
+    {
+        return $query->whereHas('dates', function ($q) use ($min, $max) {
+            $q->whereBetween('adult_price', [$min, $max])
+                ->available();
+        });
+    }
+
+    public function scopeWithAvailableDates(Builder $query): Builder
+    {
+        return $query->whereHas('dates', function ($q) {
+            $q->available();
+        });
+    }
+
+    public function scopeWithMinPrice(Builder $query): Builder
+    {
+        return $query->addSelect(['tours.*'])
+            ->selectRaw('(SELECT MIN(adult_price) FROM tour_dates WHERE tour_dates.tour_id = tours.id AND tour_dates.status = \'available\' AND tour_dates.departure_date >= ?) as computed_min_price', [now()->toDateString()]);
+    }
+
+    // === Methods ===
+
+    /**
+     * Get the next available departure date
+     */
+    public function getNextAvailableDate(): ?TourDate
+    {
+        return $this->dates()->available()->orderBy('departure_date')->first();
+    }
+
+    /**
+     * Get all available dates
+     */
+    public function getAvailableDates()
+    {
+        return $this->dates()->available()->get();
+    }
+
+    /**
+     * Calculate and update min_price
+     */
+    public function recalculateMinPrice(): int
+    {
+        $minPrice = $this->dates()
+            ->available()
+            ->min('adult_price');
+
+        $this->min_price = $minPrice;
+        $this->save();
+
+        return $minPrice ?? 0;
+    }
+
+    /**
+     * Check if tour has any available dates
+     */
+    public function hasAvailableDates(): bool
+    {
+        return $this->dates()->available()->exists();
+    }
+
+    /**
+     * Check if tour is published and active
+     */
+    public function isPublished(): bool
+    {
+        return in_array($this->status, [self::STATUS_PUBLISHED, self::STATUS_ON_SALE])
+            && $this->is_active;
+    }
+
+    /**
+     * Check if tour is sold out
+     */
+    public function isSoldOut(): bool
+    {
+        return !$this->hasAvailableDates() && $this->dates()->count() > 0;
+    }
+
+    /**
+     * Update tour status based on dates availability
+     */
+    public function autoUpdateStatus(): void
+    {
+        if ($this->status === self::STATUS_CANCELLED || $this->status === self::STATUS_INACTIVE) {
+            return;
+        }
+
+        if (!$this->hasAvailableDates()) {
+            if ($this->dates()->count() > 0) {
+                $this->status = self::STATUS_SOLD_OUT;
+            } else {
+                $this->status = self::STATUS_EXPIRED;
+            }
+        } else {
+            if ($this->status !== self::STATUS_ON_SALE && $this->status !== self::STATUS_DRAFT) {
+                $this->status = self::STATUS_ON_SALE;
+            }
+        }
+
+        $this->save();
+    }
+
+    /**
+     * Publish the tour
+     */
+    public function publish(): void
+    {
+        $this->status = self::STATUS_PUBLISHED;
+        $this->is_active = true;
+        $this->published_at = now();
+        $this->save();
+    }
+
+    /**
+     * Unpublish the tour
+     */
+    public function unpublish(): void
+    {
+        $this->status = self::STATUS_DRAFT;
+        $this->is_active = false;
+        $this->save();
+    }
+
+    /**
+     * Get formatted duration
+     */
+    public function getFormattedDurationAttribute(): string
+    {
+        $parts = [];
+        if ($this->duration_days) {
+            $parts[] = "{$this->duration_days} روز";
+        }
+        if ($this->duration_nights) {
+            $parts[] = "{$this->duration_nights} شب";
+        }
+        return implode(' و ', $parts) ?: 'نامشخص';
+    }
+
+    /**
+     * Get formatted price
+     */
+    public function getFormattedPriceAttribute(): string
+    {
+        if (!$this->min_price) {
+            return 'استعلام قیمت';
+        }
+        return number_format($this->min_price) . ' ' . ($this->currency === 'IRR' ? 'ریال' : $this->currency);
+    }
+
+    /**
+     * Get SEO title (fallback to tour title)
+     */
+    public function getSeoTitleAttribute($value): string
+    {
+        return $value ?: $this->title;
+    }
+
+    /**
+     * Get SEO description (fallback to summary)
+     */
+    public function getSeoDescriptionAttribute($value): string
+    {
+        return $value ?: ($this->summary ?: Str::limit(strip_tags($this->description), 160));
+    }
+
+    // === Static Methods ===
+
+    /**
+     * Generate unique tour code
+     */
+    public static function generateUniqueCode(): string
+    {
+        do {
+            // Generate: TR-XXX-NNN where X = uppercase letter, N = digit
+            $letters = '';
+            for ($i = 0; $i < 3; $i++) {
+                $letters .= chr(rand(65, 90)); // A-Z
+            }
+            $numbers = str_pad(rand(0, 999), 3, '0', STR_PAD_LEFT);
+            $code = 'TR-' . $letters . '-' . $numbers;
+        } while (self::where('code', $code)->exists());
+
+        return $code;
+    }
+
+    /**
+     * Generate unique slug from title
+     */
+    public static function generateUniqueSlug(string $title, ?int $excludeId = null): string
+    {
+        $baseSlug = Str::slug($title, '-');
+        if (empty($baseSlug)) {
+            $baseSlug = 'tour-' . Str::random(5);
+        }
+
+        $slug = $baseSlug;
+        $counter = 1;
+
+        while (self::where('slug', $slug)->when($excludeId, fn($q) => $q->where('id', '!=', $excludeId))->exists()) {
+            $slug = $baseSlug . '-' . $counter++;
+        }
+
+        return $slug;
+    }
+
+    /**
+     * Find tour by slug or old slug
+     */
+    public static function findBySlugOrRedirect(string $slug): ?self
+    {
+        // Try current slug
+        $tour = self::where('slug', $slug)->first();
+        if ($tour) {
+            return $tour;
+        }
+
+        // Try old slugs
+        $oldSlug = TourOldSlug::findBySlug($slug);
+        if ($oldSlug) {
+            $oldSlug->incrementRedirectCount();
+            return $oldSlug->tour;
+        }
+
+        return null;
+    }
+}

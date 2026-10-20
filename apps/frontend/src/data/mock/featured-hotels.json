@@ -1,0 +1,98 @@
+[
+  {
+    "id": 301,
+    "title": "هتل برج العرب دبی",
+    "slug": "burj-al-arab",
+    "image": "https://picsum.photos/seed/featured-dubai-1/800/600",
+    "stars": 7,
+    "rating": 4.9,
+    "city": "دبی",
+    "country": "امارات",
+    "amenities": ["وای‌فای", "استخر", "رستوران", "ساحل اختصاصی"],
+    "url": "/hotels/burj-al-arab"
+  },
+  {
+    "id": 302,
+    "title": "هتل آتلانتیس پالم",
+    "slug": "atlantis-the-palm",
+    "image": "https://picsum.photos/seed/featured-dubai-2/800/600",
+    "stars": 5,
+    "rating": 4.8,
+    "city": "دبی",
+    "country": "امارات",
+    "amenities": ["پارک آبی", "استخر", "رستوران", "ساحل"],
+    "url": "/hotels/atlantis-the-palm"
+  },
+  {
+    "id": 304,
+    "title": "هتل ماندارین اورینتال",
+    "slug": "mandarin-oriental-bangkok",
+    "image": "https://picsum.photos/seed/featured-thai-1/800/600",
+    "stars": 5,
+    "rating": 4.8,
+    "city": "بانکوک",
+    "country": "تایلند",
+    "amenities": ["استخر", "اسپا", "رستوران", "سرویس قایق"],
+    "url": "/hotels/mandarin-oriental-bangkok"
+  },
+  {
+    "id": 305,
+    "title": "هتل بانیان تری پوکت",
+    "slug": "banyan-tree-phuket",
+    "image": "https://picsum.photos/seed/featured-thai-2/800/600",
+    "stars": 5,
+    "rating": 4.9,
+    "city": "پوکت",
+    "country": "تایلند",
+    "amenities": ["استخر خصوصی", "ساحل", "اسپا", "زمین گلف"],
+    "url": "/hotels/banyan-tree-phuket"
+  },
+  {
+    "id": 307,
+    "title": "هتل فور سیزنز بسفروس",
+    "slug": "four-seasons-bosphorus",
+    "image": "https://picsum.photos/seed/featured-ist-1/800/600",
+    "stars": 5,
+    "rating": 4.9,
+    "city": "استانبول",
+    "country": "ترکیه",
+    "amenities": ["دید بسفر", "استخر", "اسپا", "باغ تاریخی"],
+    "url": "/hotels/four-seasons-bosphorus"
+  },
+  {
+    "id": 308,
+    "title": "هتل چراغان پالاس",
+    "slug": "ciragan-palace",
+    "image": "https://picsum.photos/seed/featured-ist-2/800/600",
+    "stars": 5,
+    "rating": 4.8,
+    "city": "استانبول",
+    "country": "ترکیه",
+    "amenities": ["کاخ عثمانی", "دید بسفر", "استخر", "اسپا"],
+    "url": "/hotels/ciragan-palace"
+  },
+  {
+    "id": 303,
+    "title": "هتل آرمانی دبی",
+    "slug": "armani-hotel-dubai",
+    "image": "https://picsum.photos/seed/featured-dubai-3/800/600",
+    "stars": 5,
+    "rating": 4.9,
+    "city": "دبی",
+    "country": "امارات",
+    "amenities": ["برج خلیفه", "رستوران", "اسپا", "لوکس"],
+    "url": "/hotels/armani-hotel-dubai"
+  },
+  {
+    "id": 306,
+    "title": "هتل لبوا استیت تاور",
+    "slug": "lebua-state-tower",
+    "image": "https://picsum.photos/seed/featured-thai-3/800/600",
+    "stars": 5,
+    "rating": 4.7,
+    "city": "بانکوک",
+    "country": "تایلند",
+    "amenities": ["Sky Bar", "استخر", "دید شهری", "رستوران"],
+    "url": "/hotels/lebua-state-tower"
+  }
+]

@@ -1,0 +1,239 @@
+<?php
+
+namespace Database\Seeders;
+
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\User;
+use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\Hash;
+
+class RoleSeeder extends Seeder
+{
+    public function run(): void
+    {
+        $roles = $this->getRolesDefinition();
+
+        foreach ($roles as $slug => $data) {
+            $role = Role::updateOrCreate(
+                ['slug' => $slug],
+                [
+                    'name' => $data['name'],
+                    'description' => $data['description'],
+                    'is_system' => $data['is_system'],
+                    'priority' => $data['priority'],
+                    'requires_2fa' => $data['requires_2fa'],
+                    'is_active' => true,
+                ]
+            );
+
+            // Assign permissions
+            $permissionIds = Permission::whereIn('slug', $data['permissions'])->pluck('id')->toArray();
+            $role->syncPermissions($permissionIds);
+        }
+
+        $this->command?->info('✅ ' . count($roles) . ' roles created with permissions.');
+
+        // Create default super admin user
+        $this->createSuperAdmin();
+    }
+
+    private function getRolesDefinition(): array
+    {
+        return [
+            'super_admin' => [
+                'name' => 'سوپر ادمین',
+                'description' => 'دسترسی کامل به تمام بخش‌ها',
+                'is_system' => true,
+                'priority' => 1000,
+                'requires_2fa' => true,
+                'permissions' => Permission::pluck('slug')->toArray(), // All permissions
+            ],
+
+            'admin' => [
+                'name' => 'ادمین سیستم',
+                'description' => 'دسترسی گسترده به بخش‌های مدیریتی',
+                'is_system' => true,
+                'priority' => 900,
+                'requires_2fa' => true,
+                'permissions' => [
+                    // Full access except role management and sensitive settings
+                    'users.view', 'users.create', 'users.edit', 'users.assign_role',
+                    'users.view_passengers', 'users.view_documents',
+                    'roles.view',
+                    'hotels.view', 'hotels.create', 'hotels.edit', 'hotels.publish', 'hotels.manage_media',
+                    'tours.view', 'tours.create', 'tours.edit', 'tours.publish', 'tours.manage_dates',
+                    'tours.manage_prices', 'tours.manage_itinerary', 'tours.manage_media', 'tours.link_hotels',
+                    'bookings.view', 'bookings.create', 'bookings.edit', 'bookings.cancel', 'bookings.change_status', 'bookings.issue',
+                    'payments.view', 'payments.verify', 'payments.reconcile', 'payments.export',
+                    'refunds.view', 'refunds.create', 'refunds.approve', 'refunds.reject', 'refunds.process',
+                    'visa.view', 'visa.create', 'visa.edit', 'visa.change_status', 'visa.upload_documents',
+                    'visa.view_documents', 'visa.manage_appointments', 'visa.assign_expert',
+                    'leads.view', 'leads.edit', 'leads.assign', 'leads.change_status', 'leads.convert_to_booking', 'leads.add_note',
+                    'reports.view_dashboard', 'reports.view_sales', 'reports.view_leads', 'reports.view_searches',
+                    'reports.view_financial', 'reports.export',
+                    'settings.view', 'settings.edit', 'settings.manage_gateways', 'settings.manage_notifications',
+                    'settings.manage_discount_codes',
+                    'sync.view_logs', 'sync.trigger_manual', 'sync.retry_failed', 'sync.view_wp_status',
+                    'content.view', 'content.manage_seo', 'content.view_articles',
+                    'logs.view_admin', 'logs.view_security', 'logs.view_system', 'logs.export',
+                ],
+            ],
+
+            'support' => [
+                'name' => 'پشتیبانی',
+                'description' => 'مشاهده سفارش‌ها و درخواست‌ها بدون تغییرات حساس',
+                'is_system' => true,
+                'priority' => 500,
+                'requires_2fa' => false,
+                'permissions' => [
+                    'users.view', 'users.view_passengers',
+                    'hotels.view',
+                    'tours.view',
+                    'bookings.view',
+                    'payments.view',
+                    'refunds.view',
+                    'visa.view', 'visa.view_documents',
+                    'leads.view', 'leads.view_own', 'leads.edit', 'leads.change_status', 'leads.add_note',
+                    'reports.view_dashboard',
+                    'content.view', 'content.view_articles',
+                ],
+            ],
+
+            'tour_expert' => [
+                'name' => 'کارشناس فروش تور',
+                'description' => 'مدیریت تورها و درخواست‌های تور',
+                'is_system' => true,
+                'priority' => 400,
+                'requires_2fa' => false,
+                'permissions' => [
+                    'users.view',
+                    'hotels.view',
+                    'tours.view', 'tours.create', 'tours.edit', 'tours.publish',
+                    'tours.manage_dates', 'tours.manage_prices', 'tours.manage_itinerary',
+                    'tours.manage_media', 'tours.link_hotels',
+                    'bookings.view', 'bookings.view_own',
+                    'leads.view', 'leads.view_own', 'leads.edit', 'leads.change_status',
+                    'leads.convert_to_booking', 'leads.add_note',
+                    'reports.view_dashboard', 'reports.view_leads',
+                    'content.view',
+                ],
+            ],
+
+            'visa_expert' => [
+                'name' => 'کارشناس ویزا',
+                'description' => 'مدیریت پرونده‌های ویزا و مدارک',
+                'is_system' => true,
+                'priority' => 400,
+                'requires_2fa' => false,
+                'permissions' => [
+                    'users.view', 'users.view_documents',
+                    'visa.view', 'visa.create', 'visa.edit', 'visa.change_status',
+                    'visa.upload_documents', 'visa.view_documents', 'visa.manage_appointments',
+                    'leads.view', 'leads.view_own', 'leads.edit', 'leads.change_status', 'leads.add_note',
+                    'reports.view_dashboard',
+                    'content.view',
+                ],
+            ],
+
+            'hotel_expert' => [
+                'name' => 'کارشناس هتل',
+                'description' => 'مدیریت هتل‌ها و محتوای هتل',
+                'is_system' => true,
+                'priority' => 400,
+                'requires_2fa' => false,
+                'permissions' => [
+                    'hotels.view', 'hotels.create', 'hotels.edit', 'hotels.publish', 'hotels.manage_media',
+                    'tours.view', 'tours.link_hotels',
+                    'sync.view_logs', 'sync.trigger_manual', 'sync.view_wp_status',
+                    'content.view', 'content.edit_wp', 'content.manage_seo',
+                    'reports.view_dashboard',
+                ],
+            ],
+
+            'finance' => [
+                'name' => 'مالی',
+                'description' => 'مدیریت پرداخت‌ها، استردادها و گزارش مالی',
+                'is_system' => true,
+                'priority' => 600,
+                'requires_2fa' => true,
+                'permissions' => [
+                    'users.view',
+                    'bookings.view',
+                    'payments.view', 'payments.verify', 'payments.reconcile', 'payments.export',
+                    'refunds.view', 'refunds.create', 'refunds.approve', 'refunds.reject', 'refunds.process',
+                    'reports.view_dashboard', 'reports.view_sales', 'reports.view_financial', 'reports.export',
+                    'settings.view', 'settings.manage_gateways',
+                    'logs.view_admin',
+                ],
+            ],
+
+            'content' => [
+                'name' => 'محتوا',
+                'description' => 'مدیریت محتوا و سئو در وردپرس',
+                'is_system' => true,
+                'priority' => 300,
+                'requires_2fa' => false,
+                'permissions' => [
+                    'hotels.view',
+                    'tours.view',
+                    'content.view', 'content.edit_wp', 'content.manage_seo', 'content.view_articles',
+                    'sync.view_logs', 'sync.view_wp_status',
+                    'reports.view_dashboard',
+                ],
+            ],
+
+            'user' => [
+                'name' => 'کاربر عادی',
+                'description' => 'دسترسی‌های پایه کاربر',
+                'is_system' => true,
+                'priority' => 10,
+                'requires_2fa' => false,
+                'permissions' => [
+                    'bookings.view_own',
+                    'payments.view_own',
+                    'leads.create',
+                ],
+            ],
+        ];
+    }
+
+    private function createSuperAdmin(): void
+    {
+        $superAdminRole = Role::where('slug', 'super_admin')->first();
+        
+        if (!$superAdminRole) {
+            return;
+        }
+
+        // Check if super admin already exists
+        $existingSuperAdmin = User::where('email', 'admin@nextsafar.com')->first();
+        
+        if ($existingSuperAdmin) {
+            if (!$existingSuperAdmin->hasRole('super_admin')) {
+                $existingSuperAdmin->assignRole($superAdminRole, 'Initial setup');
+            }
+            $this->command?->info('ℹ️  Super admin already exists: admin@nextsafar.com');
+            return;
+        }
+
+        // Create new super admin
+        $superAdmin = User::create([
+            'name' => 'مدیر سیستم',
+            'email' => 'admin@nextsafar.com',
+            'phone' => '09120000000',
+            'password' => Hash::make('Admin@12345'), // Default password - should be changed
+            'email_verified_at' => now(),
+        ]);
+
+        $superAdmin->roles()->attach($superAdminRole->id, [
+            'assigned_by' => null,
+            'assigned_at' => now(),
+        ]);
+
+        $this->command?->info('✅ Super admin created:');
+        $this->command?->info('   Email: admin@nextsafar.com');
+        $this->command?->info('   Password: Admin@12345');
+        $this->command?->warn('   ⚠️  Please change this password immediately!');
+    }
+}

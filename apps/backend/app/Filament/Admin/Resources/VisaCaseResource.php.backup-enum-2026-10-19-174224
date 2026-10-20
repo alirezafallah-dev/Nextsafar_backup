@@ -1,0 +1,419 @@
+<?php
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\VisaCaseResource\Pages;
+use App\Filament\Admin\Resources\VisaCaseResource\RelationManagers;
+use App\Models\User;
+use App\Modules\Visa\Enums\VisaCaseStatus;
+use App\Modules\Visa\Models\VisaCase;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\DateTimePicker;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+
+class VisaCaseResource extends Resource
+{
+    protected static ?string $model = VisaCase::class;
+
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-document-text';
+    protected static ?string $navigationLabel = 'پرونده‌های ویزا';
+    protected static \UnitEnum|string|null $navigationGroup = 'مدیریت ویزا';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $modelLabel = 'پرونده ویزا';
+    protected static ?string $pluralModelLabel = 'پرونده‌های ویزا';
+    protected static ?string $slug = 'visa-cases';
+    protected static ?string $recordTitleAttribute = 'code';
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Tabs::make('Visa Case Tabs')->tabs([
+                Tab::make('اطلاعات اصلی')->icon('heroicon-o-document-text')->schema([
+                    Section::make('شناسه و وضعیت')->schema([
+                        TextInput::make('code')->label('کد پرونده')->disabled()->columnSpan(1),
+                        Select::make('status')->label('وضعیت')
+                            ->options(self::getStatusOptions())
+                            ->required()
+                            ->default('registered')
+                            ->disabled(fn ($record) => $record && in_array($record->status, ['completed', 'cancelled'])),
+                        Select::make('priority')->label('اولویت')->options([
+                            'low' => 'کم',
+                            'normal' => 'عادی',
+                            'high' => 'بالا',
+                            'urgent' => 'فوری',
+                        ])->default('normal'),
+                        Select::make('visa_type_id')->label('نوع ویزا')
+                            ->relationship('visaType', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->disabled(fn ($record) => $record !== null),
+                    ])->columns(2),
+
+                    Section::make('تاریخ‌های سفر و ویزا')->schema([
+                        DatePicker::make('intended_travel_date')->label('تاریخ سفر مورد نظر')->native(false)->displayFormat('Y/m/d'),
+                        DatePicker::make('visa_issue_date')->label('تاریخ صدور ویزا')->native(false)->displayFormat('Y/m/d'),
+                        DatePicker::make('visa_expiry_date')->label('تاریخ انقضای ویزا')->native(false)->displayFormat('Y/m/d'),
+                    ])->columns(3),
+                ]),
+
+                Tab::make('متقاضی و کارشناس')->icon('heroicon-o-users')->schema([
+                    Section::make('اطلاعات متقاضی')->schema([
+                        Select::make('user_id')->label('کاربر')
+                            ->relationship('user', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->required()
+                            ->disabled(fn ($record) => $record !== null),
+                        Select::make('order_id')->label('سفارش مرتبط')
+                            ->relationship('order', 'code')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
+                        Select::make('lead_id')->label('درخواست مرتبط')
+                            ->relationship('lead', 'code')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
+                    ])->columns(3),
+
+                    Section::make('کارشناس مسئول')->schema([
+                        Select::make('assigned_to')->label('کارشناس')
+                            ->relationship('assignedAgent', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
+                        TextInput::make('assigned_by')->label('توسط')->disabled(),
+                        DateTimePicker::make('assigned_at')->label('تاریخ اختصاص')->native(false)->displayFormat('Y/m/d H:i')->disabled(),
+                        DateTimePicker::make('next_follow_up_at')->label('تاریخ پیگیری بعدی')->native(false)->displayFormat('Y/m/d H:i'),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('اطلاعات پاسپورت')->icon('heroicon-o-identification')->schema([
+                    Section::make('مشخصات پاسپورت')->schema([
+                        TextInput::make('passport_number')->label('شماره پاسپورت')->maxLength(50),
+                        TextInput::make('passport_issuer')->label('صادرکننده')->maxLength(100),
+                        DatePicker::make('passport_issue_date')->label('تاریخ صدور')->native(false)->displayFormat('Y/m/d'),
+                        DatePicker::make('passport_expiry_date')->label('تاریخ انقضا')->native(false)->displayFormat('Y/m/d'),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('وقت سفارت')->icon('heroicon-o-calendar')->schema([
+                    Section::make('اطلاعات وقت سفارت')->schema([
+                        DateTimePicker::make('appointment_datetime')->label('تاریخ و ساعت وقت')->native(false)->displayFormat('Y/m/d H:i'),
+                        TextInput::make('appointment_location')->label('مکان سفارت')->maxLength(255),
+                        TextInput::make('appointment_reference')->label('شماره مرجع وقت')->maxLength(100),
+                    ])->columns(2),
+
+                    Section::make('شماره‌های پیگیری')->schema([
+                        TextInput::make('embassy_tracking_number')->label('شماره پیگیری سفارت')->maxLength(100),
+                        TextInput::make('visa_sticker_number')->label('شماره برچسب ویزا')->maxLength(100),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('مالی')->icon('heroicon-o-currency-dollar')->schema([
+                    Section::make('هزینه‌ها')->schema([
+                        TextInput::make('service_fee')->label('هزینه خدمات')->numeric()->prefix('IRR')->default(0),
+                        TextInput::make('embassy_fee')->label('هزینه سفارت')->numeric()->prefix('IRR')->default(0),
+                        TextInput::make('total_amount')->label('مبلغ کل')->numeric()->prefix('IRR')->disabled()->color('success')->weight('bold'),
+                    ])->columns(3),
+
+                    Section::make('پرداخت')->schema([
+                        TextInput::make('paid_amount')->label('مبلغ پرداختی')->numeric()->prefix('IRR')->default(0),
+                        Select::make('payment_status')->label('وضعیت پرداخت')->options([
+                            'unpaid' => '❌ پرداخت نشده',
+                            'partial' => '⚠️ پرداخت جزئی',
+                            'paid' => '✅ پرداخت شده',
+                            'refunded' => '💸 مسترد شده',
+                        ])->default('unpaid'),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('SLA و پیشرفت')->icon('heroicon-o-clock')->schema([
+                    Section::make('SLA')->schema([
+                        TextInput::make('sla_days')->label('روزهای SLA')->numeric()->default(30)->minValue(1),
+                        TextInput::make('elapsed_days')->label('روزهای سپری شده')->numeric()->disabled()->color('warning'),
+                        IconColumn::make('is_overdue')->label('تأخیر دارد')->boolean()
+                            ->trueIcon('heroicon-o-exclamation-triangle')
+                            ->falseIcon('heroicon-o-check-circle')
+                            ->trueColor('danger')
+                            ->falseColor('success'),
+                    ])->columns(3),
+
+                    Section::make('چک‌لیست مدارک')->schema([
+                        TextInput::make('total_checklist_items')->label('تعداد کل آیتم‌ها')->numeric()->disabled(),
+                        TextInput::make('uploaded_documents_count')->label('مدارک آپلود شده')->numeric()->disabled(),
+                        TextInput::make('approved_documents_count')->label('مدارک تایید شده')->numeric()->disabled(),
+                        TextInput::make('documents_completion_percentage')->label('درصد تکمیل')->numeric()->suffix('%')->disabled()->color('success'),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('تاریخ‌های مهم')->icon('heroicon-o-calendar-days')->schema([
+                    Section::make('مراحل پردازش')->schema([
+                        DateTimePicker::make('documents_completed_at')->label('تکمیل مدارک')->native(false)->displayFormat('Y/m/d H:i'),
+                        DateTimePicker::make('submitted_to_embassy_at')->label('ارسال به سفارت')->native(false)->displayFormat('Y/m/d H:i'),
+                        DateTimePicker::make('biometrics_completed_at')->label('انگشت‌نگاری')->native(false)->displayFormat('Y/m/d H:i'),
+                        DateTimePicker::make('result_received_at')->label('دریافت نتیجه')->native(false)->displayFormat('Y/m/d H:i'),
+                    ])->columns(2),
+
+                    Section::make('تکمیل و لغو')->schema([
+                        DateTimePicker::make('completed_at')->label('تاریخ تکمیل')->native(false)->displayFormat('Y/m/d H:i'),
+                        DateTimePicker::make('cancelled_at')->label('تاریخ لغو')->native(false)->displayFormat('Y/m/d H:i'),
+                        Textarea::make('cancellation_reason')->label('دلیل لغو')->rows(2)->columnSpanFull(),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('یادداشت‌ها')->icon('heroicon-o-chat-bubble-bottom-center-text')->schema([
+                    Section::make('یادداشت‌های داخلی')->schema([
+                        Textarea::make('internal_notes')->label('یادداشت‌های داخلی')->rows(5)->columnSpanFull()
+                            ->helperText('فقط برای کارشناسان قابل مشاهده است'),
+                    ]),
+
+                    Section::make('رد یا اصلاح')->schema([
+                        Textarea::make('rejection_reason')->label('دلیل رد')->rows(3)->columnSpanFull(),
+                        Textarea::make('correction_notes')->label('نکات اصلاحی')->rows(3)->columnSpanFull(),
+                    ]),
+                ]),
+            ])->columnSpanFull(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('code')->label('کد پرونده')->searchable()->sortable()->badge()->color('primary')->weight('bold'),
+                TextColumn::make('visaType.name')->label('نوع ویزا')->searchable()->sortable()->badge()->color('info'),
+                TextColumn::make('user.name')->label('متقاضی')->searchable()->sortable()->limit(20),
+                TextColumn::make('status')->label('وضعیت')->badge()
+                    ->formatStateUsing(fn ($state) => self::getStatusOptions()[$state] ?? $state)
+                    ->color(fn ($state) => self::getStatusColor($state))
+                    ->sortable(),
+                TextColumn::make('priority')->label('اولویت')->badge()
+                    ->formatStateUsing(fn ($s) => match ($s) {
+                        'low' => 'کم',
+                        'normal' => 'عادی',
+                        'high' => 'بالا',
+                        'urgent' => 'فوری',
+                        default => $s,
+                    })
+                    ->color(fn ($s) => match ($s) {
+                        'urgent' => 'danger',
+                        'high' => 'warning',
+                        'normal' => 'info',
+                        'low' => 'gray',
+                        default => 'gray',
+                    })
+                    ->sortable(),
+                TextColumn::make('documents_completion_percentage')->label('تکمیل مدارک')
+                    ->formatStateUsing(fn ($state) => $state . '%')
+                    ->badge()
+                    ->color(fn ($state) => $state >= 100 ? 'success' : ($state >= 50 ? 'warning' : 'danger'))
+                    ->sortable(),
+                TextColumn::make('sla_days')->label('SLA')
+                    ->formatStateUsing(fn ($state, $record) => $record->elapsed_days . '/' . $state . ' روز')
+                    ->badge()
+                    ->color(fn ($record) => $record->is_overdue ? 'danger' : ($record->elapsed_days > $record->sla_days * 0.8 ? 'warning' : 'success'))
+                    ->sortable(),
+                IconColumn::make('is_overdue')->label('تأخیر')->boolean()
+                    ->trueIcon('heroicon-o-exclamation-triangle')
+                    ->falseIcon('heroicon-o-check-circle')
+                    ->trueColor('danger')
+                    ->falseColor('success'),
+                TextColumn::make('assignedAgent.name')->label('کارشناس')->placeholder('—')->toggleable(),
+                TextColumn::make('intended_travel_date')->label('تاریخ سفر')->date('Y/m/d')->sortable()->toggleable()->placeholder('—'),
+                TextColumn::make('created_at')->label('تاریخ ایجاد')->dateTime('Y/m/d')->sortable()->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                SelectFilter::make('status')->label('وضعیت')->options(self::getStatusOptions()),
+                SelectFilter::make('priority')->label('اولویت')->options([
+                    'low' => 'کم',
+                    'normal' => 'عادی',
+                    'high' => 'بالا',
+                    'urgent' => 'فوری',
+                ]),
+                SelectFilter::make('payment_status')->label('وضعیت پرداخت')->options([
+                    'unpaid' => 'پرداخت نشده',
+                    'partial' => 'پرداخت جزئی',
+                    'paid' => 'پرداخت شده',
+                    'refunded' => 'مسترد شده',
+                ]),
+                SelectFilter::make('assigned_to')->label('کارشناس مسئول')
+                    ->relationship('assignedAgent', 'name'),
+                TernaryFilter::make('is_overdue')->label('تأخیر دارد'),
+                Filter::make('due_for_follow_up')->label('نیازمند پیگیری')
+                    ->query(fn (Builder $q) => $q->where('next_follow_up_at', '<=', now()))
+                    ->toggle(),
+                Filter::make('documents_incomplete')->label('مدارک ناقص')
+                    ->query(fn (Builder $q) => $q->where('documents_completion_percentage', '<', 100))
+                    ->toggle(),
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('change_status')
+                    ->label('تغییر وضعیت')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('warning')
+                    ->form([
+                        Select::make('new_status')
+                            ->label('وضعیت جدید')
+                            ->options(self::getStatusOptions())
+                            ->required(),
+                        Textarea::make('reason')->label('دلیل تغییر')->rows(2),
+                    ])
+                    ->action(function (VisaCase $record, array $data): void {
+                        $newStatus = $data['new_status'];
+                        
+                        if (!$record->canTransitionTo(VisaCaseStatus::from($newStatus))) {
+                            \Filament\Notifications\Notification::make()
+                                ->title('تغییر وضعیت مجاز نیست')
+                                ->body('این تغییر وضعیت طبق قوانین مجاز نیست')
+                                ->danger()
+                                ->send();
+                            return;
+                        }
+                        
+                        $record->update(['status' => $newStatus]);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('وضعیت تغییر کرد')
+                            ->body('پرونده ' . $record->code . ' به وضعیت ' . self::getStatusOptions()[$newStatus] . ' تغییر کرد')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('assign_agent')
+                    ->label('اختصاص کارشناس')
+                    ->icon('heroicon-o-user')
+                    ->color('info')
+                    ->form([
+                        Select::make('assigned_to')
+                            ->label('کارشناس')
+                            ->options(User::pluck('name', 'id'))
+                            ->searchable()
+                            ->required(),
+                    ])
+                    ->action(function (VisaCase $record, array $data): void {
+                        $record->update([
+                            'assigned_to' => $data['assigned_to'],
+                            'assigned_by' => auth()->id(),
+                            'assigned_at' => now(),
+                        ]);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('پرونده اختصاص یافت')
+                            ->success()
+                            ->send();
+                    }),
+                Action::make('book_appointment')
+                    ->label('رزرو وقت سفارت')
+                    ->icon('heroicon-o-calendar')
+                    ->color('success')
+                    ->form([
+                        DateTimePicker::make('appointment_datetime')->label('تاریخ و ساعت')->required()->native(false)->displayFormat('Y/m/d H:i'),
+                        TextInput::make('appointment_location')->label('مکان')->required()->maxLength(255),
+                        TextInput::make('appointment_reference')->label('شماره مرجع')->maxLength(100),
+                    ])
+                    ->action(function (VisaCase $record, array $data): void {
+                        $record->update($data);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('وقت سفارت رزرو شد')
+                            ->success()
+                            ->send();
+                    })
+                    ->visible(fn (VisaCase $record) => in_array($record->status, ['needs_appointment', 'documents_complete'])),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->striped()
+            ->persistFiltersInSession();
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\PassengersRelationManager::class,
+            RelationManagers\DocumentsRelationManager::class,
+            RelationManagers\TimelineRelationManager::class,
+            RelationManagers\NotesRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListVisaCases::route('/'),
+            'create' => Pages\CreateVisaCase::route('/create'),
+            'view' => Pages\ViewVisaCase::route('/{record}'),
+            'edit' => Pages\EditVisaCase::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $overdue = static::getModel()::where('is_overdue', true)->count();
+        return $overdue > 0 ? (string) $overdue : null;
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'danger';
+    }
+
+    protected static function getStatusOptions(): array
+    {
+        $options = [];
+        foreach (VisaCaseStatus::cases() as $status) {
+            $options[$status->value] = $status->label();
+        }
+        return $options;
+    }
+
+    protected static function getStatusColor($status): string
+    {
+        $status = $status instanceof \BackedEnum ? $status->value : $status;
+        
+        return match ($status) {
+            'registered' => 'gray',
+            'documents_incomplete' => 'warning',
+            'documents_complete' => 'info',
+            'under_review' => 'info',
+            'needs_appointment' => 'warning',
+            'appointment_booked' => 'success',
+            'submitted' => 'info',
+            'in_embassy_process' => 'info',
+            'needs_biometrics' => 'warning',
+            'approved' => 'success',
+            'rejected' => 'danger',
+            'needs_correction' => 'warning',
+            'completed' => 'success',
+            'cancelled' => 'gray',
+            default => 'gray',
+        };
+    }
+}

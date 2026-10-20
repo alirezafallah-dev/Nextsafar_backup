@@ -1,0 +1,112 @@
+[
+  {
+    "id": 201,
+    "slug": "news-visa-policy-2026",
+    "title": { "rendered": "تغییرات جدید قوانین ویزا در سال ۲۰۲۶" },
+    "excerpt": { "rendered": "<p>قوانین جدید ویزای شینگن و کانادا برای ایرانیان اعلام شد</p>" },
+    "date": "2026-10-16T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-visa/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اخبار ویزا", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 202,
+    "slug": "news-flight-routes",
+    "title": { "rendered": "افزایش مسیرهای پروازی ایران به اروپا" },
+    "excerpt": { "rendered": "<p>پروازهای مستقیم جدید به پاریس، آمستردام و فرانکفورت</p>" },
+    "date": "2026-10-15T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-flight/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اخبار پرواز", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 203,
+    "slug": "news-hotel-discounts",
+    "title": { "rendered": "تخفیف‌های ویژه هتل‌ها در فصل پاییز" },
+    "excerpt": { "rendered": "<p>تا ۴۰٪ تخفیف در هتل‌های استانبول، دبی و تایلند</p>" },
+    "date": "2026-10-14T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-hotel/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اخبار هتل", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 204,
+    "slug": "news-tourism-growth",
+    "title": { "rendered": "رشد ۳۰ درصدی صنعت گردشگری ایران" },
+    "excerpt": { "rendered": "<p>گزارش رسمی از رشد چشم‌گیر گردشگری ورودی و خروجی ایران</p>" },
+    "date": "2026-10-13T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-tourism/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اخبار گردشگری", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 205,
+    "slug": "news-new-airport",
+    "title": { "rendered": "افتتاح ترمینال جدید فرودگاه امام خمینی" },
+    "excerpt": { "rendered": "<p>ترمینال ۴ فرودگاه امام با ظرفیت ۱۰ میلیون مسافر در سال</p>" },
+    "date": "2026-10-12T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-airport/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اخبار فرودگاه", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 206,
+    "slug": "news-travel-trends",
+    "title": { "rendered": "ترندهای سفر در زمستان ۲۰۲۶" },
+    "excerpt": { "rendered": "<p>مقاصد محبوب زمستانی، سفرهای ترکیبی و تورهای تخصصی</p>" },
+    "date": "2026-10-11T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-trends/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ترندها", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 207,
+    "slug": "news-currency-change",
+    "title": { "rendered": "تأثیر نوسانات ارزی بر قیمت تورها" },
+    "excerpt": { "rendered": "<p>بررسی تأثیر تغییرات نرخ ارز بر هزینه سفر به مقاصد محبوب</p>" },
+    "date": "2026-10-10T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-currency/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اقتصاد", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 208,
+    "slug": "news-insurance-update",
+    "title": { "rendered": "تغییرات جدید بیمه مسافرتی برای کشورهای اروپایی" },
+    "excerpt": { "rendered": "<p>الزامات جدید بیمه مسافرتی برای ویزای شینگن از ۲۰۲۶</p>" },
+    "date": "2026-10-09T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-insurance/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "بیمه", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 209,
+    "slug": "news-dubai-expo",
+    "title": { "rendered": "نمایشگاه بین‌المللی گردشگری دبی ۲۰۲۶" },
+    "excerpt": { "rendered": "<p>بزرگترین رویداد گردشگری خاورمیانه با حضور ۱۵۰ کشور</p>" },
+    "date": "2026-10-08T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-expo/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "نمایشگاه", "taxonomy": "travelnews_category" }]]
+    }
+  },
+  {
+    "id": 210,
+    "slug": "news-iran-tourism",
+    "title": { "rendered": "ایران در صدر مقاصد گردشگری حلال جهان" },
+    "excerpt": { "rendered": "<p>گزارش جهانی از جایگاه ایران در صنعت گردشگری حلال</p>" },
+    "date": "2026-10-07T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/news-iran/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ایران", "taxonomy": "travelnews_category" }]]
+    }
+  }
+]

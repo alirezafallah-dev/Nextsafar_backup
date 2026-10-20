@@ -1,0 +1,112 @@
+[
+  {
+    "id": 101,
+    "slug": "guide-istanbul",
+    "title": { "rendered": "راهنمای کامل سفر به استانبول" },
+    "excerpt": { "rendered": "<p>همه چیزی که برای سفر به استانبول نیاز دارید بدانید: هتل، غذا، جاذبه‌ها</p>" },
+    "date": "2026-10-15T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-istanbul/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ترکیه", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 102,
+    "slug": "guide-dubai",
+    "title": { "rendered": "راهنمای سفر به دبی" },
+    "excerpt": { "rendered": "<p>جاذبه‌ها، هتل‌ها، مراکز خرید و نکات مهم سفر به دبی</p>" },
+    "date": "2026-10-14T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-dubai/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "امارات", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 103,
+    "slug": "guide-paris",
+    "title": { "rendered": "راهنمای سفر به پاریس" },
+    "excerpt": { "rendered": "<p>شهر نور و عاشقانه‌ترین شهر اروپا، بهترین زمان سفر و جاذبه‌ها</p>" },
+    "date": "2026-10-13T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-paris/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "فرانسه", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 104,
+    "slug": "guide-tokyo",
+    "title": { "rendered": "راهنمای سفر به توکیو" },
+    "excerpt": { "rendered": "<p>فرهنگ و تکنولوژی در پایتخت ژاپن، راهنمای کامل حمل و نقل و غذا</p>" },
+    "date": "2026-10-12T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-tokyo/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ژاپن", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 105,
+    "slug": "guide-bangkok",
+    "title": { "rendered": "راهنمای سفر به بانکوک" },
+    "excerpt": { "rendered": "<p>پایتخت پر جنب و جوش تایلند، معابد طلایی و غذاهای خیابانی</p>" },
+    "date": "2026-10-11T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-bangkok/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "تایلند", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 106,
+    "slug": "guide-rome",
+    "title": { "rendered": "راهنمای سفر به رم" },
+    "excerpt": { "rendered": "<p>شهر ابدی، کلوسئوم، واتیکان و غذاهای اصیل ایتالیایی</p>" },
+    "date": "2026-10-10T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-rome/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ایتالیا", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 107,
+    "slug": "guide-barcelona",
+    "title": { "rendered": "راهنمای سفر به بارسلون" },
+    "excerpt": { "rendered": "<p>شهر گاودی، ساگرادا فامیلیا و سواحل مدیترانه‌ای</p>" },
+    "date": "2026-10-09T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-barcelona/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اسپانیا", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 108,
+    "slug": "guide-malaysia",
+    "title": { "rendered": "راهنمای سفر به مالزی" },
+    "excerpt": { "rendered": "<p>کوالالامپور، پنانگ و لانگکاوی، ترکیب فرهنگ و طبیعت</p>" },
+    "date": "2026-10-08T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-malaysia/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "مالزی", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 109,
+    "slug": "guide-georgia",
+    "title": { "rendered": "راهنمای سفر به گرجستان" },
+    "excerpt": { "rendered": "<p>تفلیس و باتومی، سفر ارزان و بدون ویزا به گرجستان</p>" },
+    "date": "2026-10-07T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-georgia/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "گرجستان", "taxonomy": "travelguide_category" }]]
+    }
+  },
+  {
+    "id": 110,
+    "slug": "guide-antalya",
+    "title": { "rendered": "راهنمای سفر به آنتالیا" },
+    "excerpt": { "rendered": "<p>سواحل رویایی، هتل‌های all-inclusive و شهر قدیمی آنتالیا</p>" },
+    "date": "2026-10-06T10:00:00",
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/guide-antalya/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ترکیه", "taxonomy": "travelguide_category" }]]
+    }
+  }
+]

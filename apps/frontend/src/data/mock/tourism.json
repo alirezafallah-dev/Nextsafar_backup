@@ -1,0 +1,12 @@
+[
+  { "id": 510, "slug": "turkey", "name": "ترکیه", "parent": 0, "count": 89, "meta": { "image": "https://picsum.photos/seed/tourism-turkey/400/400" } },
+  { "id": 511, "slug": "uae", "name": "امارات", "parent": 0, "count": 76, "meta": { "image": "https://picsum.photos/seed/tourism-uae/400/400" } },
+  { "id": 512, "slug": "france", "name": "فرانسه", "parent": 0, "count": 65, "meta": { "image": "https://picsum.photos/seed/tourism-france/400/400" } },
+  { "id": 513, "slug": "japan", "name": "ژاپن", "parent": 0, "count": 54, "meta": { "image": "https://picsum.photos/seed/tourism-japan/400/400" } },
+  { "id": 516, "slug": "thailand", "name": "تایلند", "parent": 0, "count": 78, "meta": { "image": "https://picsum.photos/seed/tourism-thailand/400/400" } },
+  { "id": 502, "slug": "istanbul", "name": "استانبول", "parent": 510, "count": 89, "meta": { "image": "https://picsum.photos/seed/tourism-istanbul/400/400" } },
+  { "id": 503, "slug": "dubai", "name": "دبی", "parent": 511, "count": 76, "meta": { "image": "https://picsum.photos/seed/tourism-dubai/400/400" } },
+  { "id": 504, "slug": "paris", "name": "پاریس", "parent": 512, "count": 65, "meta": { "image": "https://picsum.photos/seed/tourism-paris/400/400" } },
+  { "id": 517, "slug": "bangkok", "name": "بانکوک", "parent": 516, "count": 68, "meta": { "image": "https://picsum.photos/seed/tourism-bangkok/400/400" } },
+  { "id": 518, "slug": "phuket", "name": "پوکت", "parent": 516, "count": 52, "meta": { "image": "https://picsum.photos/seed/tourism-phuket/400/400" } }
+]

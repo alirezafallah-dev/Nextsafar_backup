@@ -1,0 +1,288 @@
+<?php
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\TourResource\Pages;
+use App\Filament\Admin\Resources\TourResource\RelationManagers;
+use App\Modules\Tour\Models\Tour;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+
+class TourResource extends Resource
+{
+    protected static ?string $model = Tour::class;
+
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-globe-alt';
+    protected static ?string $navigationLabel = 'تورها';
+    protected static \UnitEnum|string|null $navigationGroup = 'مدیریت محصولات';
+    protected static ?int $navigationSort = 1;
+    protected static ?string $modelLabel = 'تور';
+    protected static ?string $pluralModelLabel = 'تورها';
+    protected static ?string $slug = 'tours';
+    protected static ?string $recordTitleAttribute = 'title';
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Tabs::make('Tour Tabs')->tabs([
+                Tab::make('اطلاعات اصلی')->icon('heroicon-o-document-text')->schema([
+                    Section::make('عنوان و شناسه')->schema([
+                        TextInput::make('title')->label('عنوان تور')->required()->maxLength(255)->columnSpan(2),
+                        TextInput::make('code')->label('کد تور')->disabled()->columnSpan(1),
+                        TextInput::make('slug')->label('اسلاگ')->unique(ignoreRecord: true)->maxLength(255)->columnSpan(1),
+                        Select::make('status')->label('وضعیت')->options(self::getStatusOptions())->required()->default('draft'),
+                        Select::make('category_id')->label('دسته‌بندی')
+                            ->relationship('category', 'name')
+                            ->searchable()
+                            ->preload()
+                            ->nullable(),
+                    ])->columns(2),
+
+                    Section::make('مقصد و مدت')->schema([
+                        TextInput::make('destination_country')->label('کشور مقصد')->maxLength(255),
+                        TextInput::make('destination_city')->label('شهر مقصد')->maxLength(255),
+                        TextInput::make('origin_city')->label('شهر مبدأ')->maxLength(255),
+                        Select::make('transport_type')->label('نوع حمل‌ونقل')->options([
+                            'air' => '✈️ هوایی',
+                            'land' => '🚌 زمینی',
+                            'sea' => '🚢 دریایی',
+                            'train' => '🚆 قطار',
+                            'combined' => '🔄 ترکیبی',
+                        ]),
+                        TextInput::make('airline')->label('شرکت هواپیمایی')->nullable()->maxLength(100),
+                        TextInput::make('duration_days')->label('مدت (روز)')->numeric()->minValue(1)->required(),
+                        TextInput::make('duration_nights')->label('مدت (شب)')->numeric()->minValue(0)->default(0),
+                    ])->columns(2),
+
+                    Section::make('توضیحات')->schema([
+                        Textarea::make('summary')->label('خلاصه')->rows(3)->maxLength(500)->columnSpan(2),
+                        RichEditor::make('description')->label('توضیحات کامل')->columnSpan(2)->toolbarButtons([
+                            'bold', 'italic', 'underline', 'strike', 'link',
+                            'h2', 'h3', 'blockquote', 'codeBlock',
+                            'orderedList', 'bulletList', 'attachFiles', 'undo', 'redo',
+                        ]),
+                    ]),
+                ]),
+
+                Tab::make('قیمت و قوانین')->icon('heroicon-o-currency-dollar')->schema([
+                    Section::make('قیمت')->schema([
+                        TextInput::make('min_price')->label('حداقل قیمت')->numeric()->prefix('IRR')->default(0)->helperText('قیمت شروع'),
+                        Select::make('currency')->label('واحد پول')->options([
+                            'IRR' => 'ریال',
+                            'USD' => 'دلار',
+                            'EUR' => 'یورو',
+                        ])->default('IRR'),
+                    ])->columns(2),
+
+                    Section::make('محدودیت‌ها')->schema([
+                        TextInput::make('min_age')->label('حداقل سن')->numeric()->minValue(0)->nullable(),
+                        TextInput::make('max_age')->label('حداکثر سن')->numeric()->minValue(0)->nullable(),
+                    ])->columns(2),
+
+                    Section::make('قوانین و توضیحات مهم')->schema([
+                        RichEditor::make('cancellation_policy')->label('قوانین لغو')->columnSpan(1),
+                        RichEditor::make('required_documents')->label('مدارک مورد نیاز')->columnSpan(1),
+                        RichEditor::make('important_notes')->label('نکات مهم')->columnSpan(2),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('SEO')->icon('heroicon-o-magnifying-glass')->schema([
+                    Section::make('متادیتای سئو')->schema([
+                        TextInput::make('seo_title')->label('عنوان سئو')->maxLength(70)->columnSpan(2),
+                        Textarea::make('seo_description')->label('توضیحات سئو')->rows(3)->maxLength(160)->columnSpan(2),
+                        TextInput::make('seo_keywords')->label('کلمات کلیدی')->columnSpan(2)->helperText('با کاما جدا کنید'),
+                        TagsInput::make('meta_tags')->label('Meta Tags')->separator(','),
+                    ]),
+                ]),
+
+                Tab::make('تنظیمات')->icon('heroicon-o-cog-6-tooth')->schema([
+                    Section::make('ویژگی‌ها')->schema([
+                        Toggle::make('is_featured')->label('تور ویژه')->helperText('در صفحه اصلی نمایش داده شود'),
+                        Toggle::make('is_active')->label('فعال'),
+                        Toggle::make('is_published')->label('منتشر شده'),
+                    ])->columns(3),
+
+                    Section::make('تاریخ‌های سیستمی')->schema([
+                        DatePicker::make('published_at')->label('تاریخ انتشار')->native(false)->displayFormat('Y/m/d'),
+                        Placeholder::make('created_at')->label('ایجاد')->content(fn ($record) => $record?->created_at?->format('Y/m/d H:i') ?? '—'),
+                        Placeholder::make('updated_at')->label('بروزرسانی')->content(fn ($record) => $record?->updated_at?->format('Y/m/d H:i') ?? '—'),
+                    ])->columns(2),
+                ]),
+            ])->columnSpanFull(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                TextColumn::make('code')->label('کد')->searchable()->sortable()->badge()->color('primary'),
+                TextColumn::make('title')->label('عنوان')->searchable()->sortable()->limit(30)->weight('bold'),
+                TextColumn::make('destination_city')->label('مقصد')->searchable()->sortable()->badge()->color('info')
+                    ->formatStateUsing(fn ($state, $record) => trim(($record->destination_country ?? '') . ' - ' . ($state ?? ''), ' -')),
+                TextColumn::make('category.name')->label('دسته')->placeholder('—')->toggleable(),
+                TextColumn::make('duration_days')->label('مدت')
+                    ->formatStateUsing(fn ($state, $record) => $state ? $state . ' روز / ' . ($record->duration_nights ?? 0) . ' شب' : '—')
+                    ->sortable(),
+                TextColumn::make('min_price')->label('حداقل قیمت')->money('IRR', true)->sortable()->weight('bold'),
+                TextColumn::make('status')->label('وضعیت')->badge()
+                    ->formatStateUsing(fn ($s) => self::getStatusOptions()[$s] ?? $s)
+                    ->color(fn ($s) => self::getStatusColor($s))
+                    ->sortable(),
+                IconColumn::make('is_featured')->label('ویژه')->boolean()
+                    ->trueIcon('heroicon-o-star')->falseIcon('heroicon-o-star')
+                    ->trueColor('warning')->falseColor('gray'),
+                IconColumn::make('is_active')->label('فعال')->boolean()
+                    ->trueIcon('heroicon-o-check-circle')->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')->falseColor('danger'),
+                IconColumn::make('is_published')->label('منتشر')->boolean()
+                    ->trueIcon('heroicon-o-check-circle')->falseIcon('heroicon-o-x-circle')
+                    ->trueColor('success')->falseColor('gray'),
+                TextColumn::make('departures_count')->label('تاریخ‌ها')->counts('departures')->badge()->color('primary')->sortable(),
+                TextColumn::make('created_at')->label('ایجاد')->dateTime('Y/m/d')->sortable()->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                SelectFilter::make('status')->label('وضعیت')->options(self::getStatusOptions()),
+                SelectFilter::make('category_id')->label('دسته‌بندی')
+                    ->relationship('category', 'name'),
+                TernaryFilter::make('is_featured')->label('تور ویژه'),
+                TernaryFilter::make('is_active')->label('فعال'),
+                TernaryFilter::make('is_published')->label('منتشر شده'),
+                Filter::make('price_range')->label('بازه قیمت')->form([
+                    TextInput::make('min_price_filter')->label('از قیمت')->numeric()->prefix('IRR'),
+                    TextInput::make('max_price_filter')->label('تا قیمت')->numeric()->prefix('IRR'),
+                ])->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when($data['min_price_filter'] ?? null, fn (Builder $q, $v) => $q->where('min_price', '>=', $v))
+                        ->when($data['max_price_filter'] ?? null, fn (Builder $q, $v) => $q->where('min_price', '<=', $v));
+                }),
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('publish')
+                    ->label('انتشار')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(fn ($record) => $record->update(['is_published' => true, 'is_active' => true, 'status' => 'published']))
+                    ->visible(fn ($record) => !$record->is_published),
+                Action::make('unpublish')
+                    ->label('عدم انتشار')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->action(fn ($record) => $record->update(['is_published' => false, 'status' => 'draft']))
+                    ->visible(fn ($record) => $record->is_published),
+                Action::make('duplicate')
+                    ->label('کپی')
+                    ->icon('heroicon-o-document-duplicate')
+                    ->color('info')
+                    ->action(function ($record) {
+                        $newTour = $record->replicate();
+                        $newTour->title = $record->title . ' (کپی)';
+                        $newTour->slug = $record->slug . '-copy-' . time();
+                        $newTour->code = Tour::generateUniqueCode();
+                        $newTour->status = 'draft';
+                        $newTour->is_published = false;
+                        $newTour->save();
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('تور کپی شد')
+                            ->body("تور جدید با کد {$newTour->code} ایجاد شد")
+                            ->success()
+                            ->send();
+                    }),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->striped()
+            ->persistFiltersInSession();
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            RelationManagers\DeparturesRelationManager::class,
+            RelationManagers\HotelsRelationManager::class,
+            RelationManagers\ItinerariesRelationManager::class,
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListTours::route('/'),
+            'create' => Pages\CreateTour::route('/create'),
+            'view' => Pages\ViewTour::route('/{record}'),
+            'edit' => Pages\EditTour::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $published = static::getModel()::where('is_published', true)->count();
+        return $published > 0 ? (string) $published : null;
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'success';
+    }
+
+    protected static function getStatusOptions(): array
+    {
+        return [
+            'draft' => '📝 پیش‌نویس',
+            'ready' => '✓ آماده انتشار',
+            'published' => '🌐 منتشر شده',
+            'selling' => '💰 در حال فروش',
+            'full' => '✓ تکمیل ظرفیت',
+            'expired' => '⏰ منقضی',
+            'cancelled' => '❌ لغو شده',
+            'inactive' => '⏸️ غیرفعال',
+        ];
+    }
+
+    protected static function getStatusColor($status): string
+    {
+        $status = $status instanceof \BackedEnum ? $status->value : $status;
+        return match ($status) {
+            'draft' => 'gray',
+            'ready' => 'info',
+            'published', 'selling' => 'success',
+            'full' => 'warning',
+            'expired', 'cancelled', 'inactive' => 'danger',
+            default => 'gray',
+        };
+    }
+}
