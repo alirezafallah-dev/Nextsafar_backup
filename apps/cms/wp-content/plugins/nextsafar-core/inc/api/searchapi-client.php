@@ -1,27 +1,26 @@
 <?php
-
-namespace NextSafar\API;
-
 /**
  * SearchApi Client - DEPRECATED STUB
  * 
- * This functionality is being moved to Node.js Search Service.
- * This class exists only as a placeholder to prevent fatal errors.
- * 
- * @deprecated Use Node.js Search Service instead
+ * @deprecated Search functionality moved to Node.js Search Service (Phase 9)
+ * @see Section 5.2 & 21 of architecture spec
  */
+
+namespace NextSafar\API;
+
+if (!defined('ABSPATH')) exit;
+
 class SearchApiClient extends BaseClient {
     protected $base_url = 'https://www.searchapi.io/api/v1/search';
 
     public function search_hotels($location, $options = []) {
-        // Stub - search moved to Node.js
-        $this->last_error = 'SearchApi functionality moved to Node.js Search Service';
+        $this->last_error = 'Hotel search moved to Node.js Search Service';
+        error_log('[NextSafar] SearchApi search_hotels called but service is deprecated');
         return [];
     }
 
     public function search_flights($params = []) {
-        // Stub - search moved to Node.js
-        $this->last_error = 'SearchApi functionality moved to Node.js Search Service';
+        $this->last_error = 'Flight search moved to Node.js Search Service';
         return [];
     }
 }

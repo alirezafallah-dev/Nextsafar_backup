@@ -1,26 +1,28 @@
 <?php
+/**
+ * Activator — Manages plugin activation
+ * 
+ * این کلاس فقط مسئول ساخت جداول **محتوا** است.
+ * جداول Booking و Payment به لاراول منتقل شده‌اند (بخش ۱۳-۱۴ سند).
+ * 
+ * @package NextSafar
+ * @since 2.5.0
+ * @see Section 7 of architecture spec (WordPress sync module)
+ */
 
 namespace NextSafar;
 
 use NextSafar\Database\GeoTable;
 
-/**
- * Activator — Manages plugin activation
- *
- * This class is responsible for:
- * - Creating custom database tables
- * - Registering post types and taxonomies
- * - Creating custom user roles
- * - Scheduling cron jobs
- * - Flushing rewrite rules
- */
+if (!defined('ABSPATH')) exit;
+
 class Activator {
 
     /**
      * Main activation method
      */
     public static function activate() {
-        /* Create custom tables */
+        /* Create content-related tables only */
         self::create_sync_log_table();
         self::create_hotel_prices_table();
         self::create_hotel_availability_table();
@@ -30,14 +32,14 @@ class Activator {
         /* Create geo table */
         GeoTable::create_table();
 
-        // Create Booking and Payment tables
-        \NextSafar\Booking\BookingTable::create_table();
-        \NextSafar\Payment\PaymentTable::create_table();
-
-        // Booking passengers table
-        \NextSafar\Booking\BookingPassengerTable::create_table();
-        // Booking documents table
-        \NextSafar\Booking\BookingDocumentTable::create_table();
+        // ═══════════════════════════════════════════════════════
+        // ❌ Booking & Payment tables - MIGRATED TO LARAVEL
+        // ═══════════════════════════════════════════════════════
+        // Section 13-14 of spec: Order and Payment modules are in Laravel
+        // \NextSafar\Booking\BookingTable::create_table();
+        // \NextSafar\Payment\PaymentTable::create_table();
+        // \NextSafar\Booking\BookingPassengerTable::create_table();
+        // \NextSafar\Booking\BookingDocumentTable::create_table();
 
         /* Register post types and taxonomies */
         Core::register_post_types();
@@ -60,7 +62,7 @@ class Activator {
     }
 
     /**
-     * Create sync log table
+     * Create sync log table (Section 7.7 of spec)
      */
     public static function create_sync_log_table(): void {
         global $wpdb;
@@ -72,7 +74,7 @@ class Activator {
 
         $sql = "CREATE TABLE {$table_name} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            source VARCHAR(50) NOT NULL DEFAULT 'searchapi',
+            source VARCHAR(50) NOT NULL DEFAULT 'wordpress',
             entity_type VARCHAR(50) NOT NULL,
             status ENUM('running','completed','failed','partial') DEFAULT 'running',
             records_fetched INT DEFAULT 0,
@@ -94,10 +96,8 @@ class Activator {
     }
 
     /**
-     * Create hotel prices table (Future-proof)
-     * Supports two modes:
-     * - Hotel with post: hotel_post_id is filled
-     * - Online hotel (like future with Parto): hotel_external_id is filled
+     * Create hotel prices table (for price aggregation from providers)
+     * Note: This is NOT for storing final prices, just temporary aggregation
      */
     public static function create_hotel_prices_table(): void {
         global $wpdb;
@@ -109,14 +109,14 @@ class Activator {
 
         $sql = "CREATE TABLE {$table_name} (
             id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
-            hotel_post_id BIGINT UNSIGNED DEFAULT NULL COMMENT 'WordPress post ID (if hotel is in our database)',
-            hotel_external_id VARCHAR(255) DEFAULT NULL COMMENT 'External ID (for online hotels like Parto)',
+            hotel_post_id BIGINT UNSIGNED DEFAULT NULL,
+            hotel_external_id VARCHAR(255) DEFAULT NULL,
             check_in DATE NOT NULL,
             check_out DATE NOT NULL,
             room_type VARCHAR(100) DEFAULT 'standard',
             price DECIMAL(10,2) NOT NULL,
             currency VARCHAR(10) DEFAULT 'USD',
-            source VARCHAR(50) DEFAULT 'searchapi',
+            source VARCHAR(50) DEFAULT 'provider',
             expires_at DATETIME DEFAULT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
@@ -124,9 +124,7 @@ class Activator {
             KEY hotel_external_id (hotel_external_id),
             KEY check_in (check_in),
             KEY check_out (check_out),
-            KEY expires_at (expires_at),
-            INDEX idx_post_dates (hotel_post_id, check_in, check_out),
-            INDEX idx_ext_dates (hotel_external_id, check_in, check_out)
+            KEY expires_at (expires_at)
         ) {$charset_collate};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -134,7 +132,7 @@ class Activator {
     }
 
     /**
-     * Create hotel availability table (Future-proof)
+     * Create hotel availability table (temporary data from providers)
      */
     public static function create_hotel_availability_table(): void {
         global $wpdb;
@@ -153,7 +151,7 @@ class Activator {
             room_type VARCHAR(100) DEFAULT 'standard',
             available TINYINT(1) DEFAULT 1,
             rooms_left INT DEFAULT 0,
-            source VARCHAR(50) DEFAULT 'searchapi',
+            source VARCHAR(50) DEFAULT 'provider',
             expires_at DATETIME DEFAULT NULL,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
@@ -161,9 +159,7 @@ class Activator {
             KEY hotel_external_id (hotel_external_id),
             KEY check_in (check_in),
             KEY check_out (check_out),
-            KEY expires_at (expires_at),
-            INDEX idx_post_dates (hotel_post_id, check_in, check_out),
-            INDEX idx_ext_dates (hotel_external_id, check_in, check_out)
+            KEY expires_at (expires_at)
         ) {$charset_collate};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -171,7 +167,7 @@ class Activator {
     }
 
     /**
-     * Create price history table
+     * Create price history table (for analytics only)
      */
     public static function create_price_history_table(): void {
         global $wpdb;
@@ -189,14 +185,13 @@ class Activator {
             check_out DATE NOT NULL,
             price DECIMAL(10,2) NOT NULL,
             currency VARCHAR(10) DEFAULT 'USD',
-            source VARCHAR(50) DEFAULT 'searchapi',
+            source VARCHAR(50) DEFAULT 'provider',
             recorded_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             PRIMARY KEY  (id),
             KEY hotel_post_id (hotel_post_id),
             KEY hotel_external_id (hotel_external_id),
             KEY check_in (check_in),
-            KEY recorded_at (recorded_at),
-            INDEX idx_post_date (hotel_post_id, check_in)
+            KEY recorded_at (recorded_at)
         ) {$charset_collate};";
 
         require_once(ABSPATH . 'wp-admin/includes/upgrade.php');
@@ -235,14 +230,14 @@ class Activator {
     }
 
     /**
-     * Create custom user roles
+     * Create custom user roles (only for content management)
      */
     private static function create_custom_roles(): void {
         /* Remove old roles if they exist */
         remove_role('nextsafar_editor');
         remove_role('nextsafar_author');
 
-        /* Create editor role */
+        /* Create editor role (content only) */
         add_role('nextsafar_editor', 'NextSafar Editor', [
             'read' => true,
             'edit_posts' => true,
@@ -251,13 +246,12 @@ class Activator {
             'upload_files' => true,
             'edit_pages' => true,
             'edit_others_posts' => true,
-            'edit_pages' => true,
             'edit_published_pages' => true,
             'publish_pages' => true,
             'edit_others_pages' => true,
         ]);
 
-        /* Create author role */
+        /* Create author role (content only) */
         add_role('nextsafar_author', 'NextSafar Author', [
             'read' => true,
             'edit_posts' => true,
@@ -267,7 +261,7 @@ class Activator {
     }
 
     /**
-     * Schedule cron jobs
+     * Schedule cron jobs (only for content sync)
      */
     private static function schedule_cron_jobs(): void {
         /* News sync cron - every 15 minutes */
@@ -293,23 +287,7 @@ class Activator {
                     'display' => __('Every 15 Minutes (NextSafar)'),
                 ];
             }
-
             return $schedules;
         });
-    }
-
-    /**
-     * Plugin deactivation cleanup
-     */
-    public static function deactivate(): void {
-        /* Clear all scheduled events */
-        wp_clear_scheduled_hook('nextsafar_news_cron_hook');
-        wp_clear_scheduled_hook('nextsafar_exchange_update_cron');
-        wp_clear_scheduled_hook('ns_enrich_locations_cron');
-
-        /* Flush rewrite rules */
-        flush_rewrite_rules();
-
-        error_log('🗑️ NextSafar Core: Plugin deactivated, cron jobs cleared');
     }
 }

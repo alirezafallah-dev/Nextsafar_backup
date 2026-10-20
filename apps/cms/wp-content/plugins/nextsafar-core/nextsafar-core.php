@@ -2,8 +2,8 @@
 /**
  * Plugin Name: NextSafar Core
  * Plugin URI: https://github.com/alirezafallah-dev/nextsafar-core
- * Description: هسته مرکزی و بک‌اند هدلس (Headless) پلتفرم نکست‌سفر. ارائه‌دهنده REST API برای هتل، پرواز، مقاصد، همگام‌سازی با APIهای خارجی و برنامه‌ریزی سفر با هوش مصنوعی.
- * Version: 2.5.0
+ * Description: هسته مرکزی پلتفرم نکست‌سفر. فقط برای مدیریت محتوا و سئو. منطق تجاری در لاراول، جستجو در Node.js.
+ * Version: 3.0.0
  * Author: Alireza Fallah
  * Author URI: https://github.com/alirezafallah-dev
  * Text Domain: nextsafar
@@ -18,7 +18,7 @@
 // Plugin Constants (must be defined first!)
 // ═══════════════════════════════════════════════════════════
 if (!defined('NEXTSAFAR_VERSION')) {
-    define('NEXTSAFAR_VERSION', '2.5.0');
+    define('NEXTSAFAR_VERSION', '3.0.0');
 }
 if (!defined('NEXTSAFAR_PATH')) {
     define('NEXTSAFAR_PATH', plugin_dir_path(__FILE__));
@@ -31,18 +31,14 @@ if (!defined('NEXTSAFAR_URL')) {
 require_once __DIR__ . '/inc/FeatureFlag.php';
 require_once __DIR__ . '/inc/feature-flags.php';
 
-
 // ═══════════════════════════════════════════════════════════
-// WEBHOOK SYNC (Phase 1)
+// WEBHOOK SYNC (Phase 1 - Section 7 of spec)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/sync/WebhookSender.php';
 require_once NEXTSAFAR_PATH . 'inc/sync/hotel-hooks.php';
 require_once NEXTSAFAR_PATH . 'inc/sync/settings.php';
 
-
 if (!defined('ABSPATH')) exit;
-
-// Constants already defined above
 
 // ═══════════════════════════════════════════════════════════
 // MODULE MANAGER - Control which modules are active
@@ -63,7 +59,7 @@ require_once NEXTSAFAR_PATH . 'inc/deactivator.php';
 require_once NEXTSAFAR_PATH . 'inc/media.php';
 
 // ═══════════════════════════════════════════════════════════
-// 3. DATABASE LAYER - Tables and Schema (must load first)
+// 3. DATABASE LAYER - Tables and Schema (content only)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/database/geo-table.php';
 require_once NEXTSAFAR_PATH . 'inc/database/schema-manager.php';
@@ -71,18 +67,18 @@ require_once NEXTSAFAR_PATH . 'inc/database/news-tables.php';
 require_once NEXTSAFAR_PATH . 'inc/database/ai-trip-table.php';
 
 // ═══════════════════════════════════════════════════════════
-// 4. GEO SYSTEM - Spatial data foundation (before Sync)
+// 4. GEO SYSTEM - Spatial data foundation
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/sync/geo-schema.php';
 require_once NEXTSAFAR_PATH . 'inc/sync/geo-sync.php';
 require_once NEXTSAFAR_PATH . 'inc/sync/place-enrich-trait.php';
 
 // ═══════════════════════════════════════════════════════════
-// 5. API CLIENTS - External service integrations
+// 5. API CLIENTS - External service integrations (stubs for search)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/api/base-client.php';
-require_once NEXTSAFAR_PATH . 'inc/api/searchapi-client.php';
-require_once NEXTSAFAR_PATH . 'inc/api/serpapi-client.php';
+require_once NEXTSAFAR_PATH . 'inc/api/searchapi-client.php';  // Stub
+require_once NEXTSAFAR_PATH . 'inc/api/serpapi-client.php';    // Stub
 require_once NEXTSAFAR_PATH . 'inc/api/image-manager.php';
 require_once NEXTSAFAR_PATH . 'inc/api/wikipedia-client.php';
 require_once NEXTSAFAR_PATH . 'inc/api/rate-limiter.php';
@@ -96,7 +92,7 @@ require_once NEXTSAFAR_PATH . 'inc/api/base-sync.php';
 require_once NEXTSAFAR_PATH . 'inc/api/batch-sync.php';
 
 // ═══════════════════════════════════════════════════════════
-// 7. SYNC CLASSES - Entity synchronization services
+// 7. SYNC CLASSES - Entity synchronization services (Section 7)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/api/hotel-sync.php';
 require_once NEXTSAFAR_PATH . 'inc/api/destination-sync.php';
@@ -115,7 +111,7 @@ require_once NEXTSAFAR_PATH . 'inc/api/news-sync.php';
 require_once NEXTSAFAR_PATH . 'inc/api/news-batch-sync.php';
 
 // ═══════════════════════════════════════════════════════════
-// 9. POST TYPES - Custom content types
+// 9. POST TYPES - Custom content types (Section 5.3)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/posttypes/hotel.php';
 require_once NEXTSAFAR_PATH . 'inc/posttypes/airport.php';
@@ -125,9 +121,10 @@ require_once NEXTSAFAR_PATH . 'inc/posttypes/hospital.php';
 require_once NEXTSAFAR_PATH . 'inc/posttypes/visa.php';
 require_once NEXTSAFAR_PATH . 'inc/posttypes/travelguide.php';
 require_once NEXTSAFAR_PATH . 'inc/posttypes/travelnews.php';
+// ❌ tour.php removed - migrated to Laravel (Section 9)
 
 // ═══════════════════════════════════════════════════════════
-// 10. TAXONOMIES - Categories and tags
+// 10. TAXONOMIES - Categories and tags (Section 5.3)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/hotel-category.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/hotel-tag.php';
@@ -146,13 +143,12 @@ require_once NEXTSAFAR_PATH . 'inc/taxonomies/travelguide-tag.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/travelnews-category.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/travelnews-tag.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/term-images.php';
-
-// ═══ Tourism System ═══
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/tourism.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/tourism-meta.php';
+// ❌ tour-category.php, tour-tag.php removed - migrated to Laravel
 
 // ═══════════════════════════════════════════════════════════
-// 11. METABOXES - Custom fields in editor
+// 11. METABOXES - Custom fields in editor (content only)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/metaboxes/hotel-metabox.php';
 require_once NEXTSAFAR_PATH . 'inc/metaboxes/hotel-featured-meta.php';
@@ -171,6 +167,7 @@ require_once NEXTSAFAR_PATH . 'inc/metaboxes/travelguide-metabox.php';
 require_once NEXTSAFAR_PATH . 'inc/metaboxes/travelnews-metabox.php';
 require_once NEXTSAFAR_PATH . 'inc/metaboxes/geo-metabox.php';
 require_once NEXTSAFAR_PATH . 'inc/metaboxes/geo-coords-field.php';
+// ❌ tour-metabox.php, tour-details.php removed - migrated to Laravel
 
 // ═══════════════════════════════════════════════════════════
 // 12. ADMIN - Backend interface
@@ -184,7 +181,7 @@ require_once NEXTSAFAR_PATH . 'inc/admin/menu.php';
 include_once NEXTSAFAR_PATH . 'inc/admin/icon-menu.php';
 
 // ═══════════════════════════════════════════════════════════
-// 13. REST API ENDPOINTS - API endpoints
+// 13. REST API ENDPOINTS - API endpoints (content only)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/api/news-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/api/menu-endpoint.php';
@@ -192,8 +189,6 @@ require_once NEXTSAFAR_PATH . 'inc/api/stats-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/api/world-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/api/country-posts-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/api/featured-hotels-endpoint.php';
-
-// ═══ AI Trip Planner ═══
 require_once NEXTSAFAR_PATH . 'inc/api/ai-trip-gemini-client.php';
 require_once NEXTSAFAR_PATH . 'inc/api/ai-trip-planner-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/admin/ai-trip-settings.php';
@@ -218,8 +213,7 @@ if (is_admin()) {
 require_once NEXTSAFAR_PATH . 'inc/core.php';
 
 // ═══════════════════════════════════════════════════════════
-// 2.5 CORE INFRASTRUCTURE - Logger, RateLimiter, Validator, ErrorHandler
-// (باید قبل از بقیه فایل‌ها لود شود)
+// CORE INFRASTRUCTURE - Logger, RateLimiter, Validator, ErrorHandler
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/core/class-ns-logger.php';
 require_once NEXTSAFAR_PATH . 'inc/core/class-ns-rate-limiter.php';
@@ -236,6 +230,8 @@ register_deactivation_hook(__FILE__, ['NextSafar\Deactivator', 'deactivate']);
 // BOOTSTRAP - Plugin initialization
 // ═══════════════════════════════════════════════════════════
 add_action('plugins_loaded', function () {
+    // Initialize Core (registers post types, taxonomies, metaboxes)
+    \NextSafar\Core::init();
     \NextSafar\Database\SchemaManager::init();
     \NextSafar\API\NewsSync::init();
     \NextSafar\Admin\Assets::init();

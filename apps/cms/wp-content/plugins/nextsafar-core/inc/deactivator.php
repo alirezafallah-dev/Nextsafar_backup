@@ -1,16 +1,18 @@
 <?php
+/**
+ * Deactivator — Manages plugin deactivation
+ * 
+ * Note: Tables are NOT deleted in this method.
+ * Tables are only deleted when the plugin is completely uninstalled.
+ * 
+ * @package NextSafar
+ * @since 2.5.0
+ */
 
 namespace NextSafar;
 
 if (!defined('ABSPATH')) exit;
 
-/**
- * Deactivator — Manages plugin deactivation
- *
- * Note: Tables are NOT deleted in this method.
- * Tables are only deleted when the plugin is completely uninstalled,
- * so that if the user temporarily deactivates the plugin, their data is preserved.
- */
 class Deactivator {
 
     /** Option key for storing database version */
@@ -40,10 +42,7 @@ class Deactivator {
      */
     private static function clear_all_cron_jobs(): void {
         $cron_hooks = [
-            /* News system cron */
             'nextsafar_news_cron_hook',
-
-            /* Other crons (if any) */
             'ns_enrich_locations_cron',
             'nextsafar_exchange_update_cron',
             'nextsafar_sync_cron',
@@ -57,8 +56,6 @@ class Deactivator {
 
     /**
      * Clear temporary transients (not permanent data)
-     *
-     * Note: Only cache transients are cleared, not important data
      */
     private static function clear_temporary_transients(): void {
         global $wpdb;

@@ -2,8 +2,19 @@
 /**
  * Hotel Webhook Hooks
  * 
- * Automatically triggers webhook when hotel posts are created/updated/deleted.
- * Part of Phase 1: WordPress → Laravel sync
+ * هوک‌های خودکار برای ارسال وب‌هوک هنگام تغییر پست هتل (بخش ۷.۳ سند).
+ * 
+ * رویدادهای پشتیبانی شده:
+ * - created: پست هتل ایجاد شد
+ * - updated: پست هتل بروزرسانی شد
+ * - published: پست هتل منتشر شد
+ * - drafted: پست هتل به پیش‌نویس رفت
+ * - trashed: پست هتل به زباله رفت
+ * - deleted: پست هتل حذف شد
+ * 
+ * @package NextSafar\Sync
+ * @since 2.5.0
+ * @see Section 7.3 of architecture spec
  */
 
 namespace NextSafar\Sync;
@@ -47,7 +58,7 @@ add_action('save_post', function ($postId, $post, $update) {
     if (wp_is_post_revision($postId)) return;
     if (wp_is_post_autosave($postId)) return;
     
-    // جلوگیری از loop
+    // جلوگیری از loop (Section 7.6 item 7)
     if (defined('DOING_NEXTSAFAR_SYNC') && DOING_NEXTSAFAR_SYNC) return;
     
     $sender = get_webhook_sender();
@@ -66,7 +77,7 @@ add_action('save_post', function ($postId, $post, $update) {
     
     $result = $sender->sendHotelEvent($event, $postId, $data);
     
-    // Save result to post meta for debugging
+    // Save result to post meta for debugging (Section 7.7)
     update_post_meta($postId, '_nextsafar_last_sync', [
         'event' => $event,
         'time' => current_time('mysql'),
@@ -100,7 +111,7 @@ add_action('transition_post_status', function ($new_status, $old_status, $post) 
 }, 10, 3);
 
 /**
- * Hook: When a hotel post is deleted permanently
+ * Hook: When a hotel post is deleted permanently (Section 7.6 item 3)
  */
 add_action('before_delete_post', function ($postId) {
     $post = get_post($postId);
