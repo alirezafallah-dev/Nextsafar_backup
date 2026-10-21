@@ -84,3 +84,15 @@ if (file_exists(base_path('app/Modules/Visa/Routes/visa.php'))) {
 
 // Notification Routes
 require __DIR__.'/../app/Modules/Notification/Routes/notifications.php';
+
+// ═══════════════════════════════════════════════════════
+// AI Trip Planner Module
+// ═══════════════════════════════════════════════════════
+require base_path('app/Modules/TripPlanner/routes.php');
+
+
+// ═══════════════════════════════════════════════════════
+// AI Trip Planner Module
+// ═══════════════════════════════════════════════════════
+require base_path('app/Modules/TripPlanner/routes.php');
+

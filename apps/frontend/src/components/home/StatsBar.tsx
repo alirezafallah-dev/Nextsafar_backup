@@ -34,7 +34,7 @@ export default async function StatsBar() {
               className="bg-white p-3 md:p-6 text-center hover:bg-primary-lightest/40 transition-colors duration-200"
             >
               <Icon className="w-4 h-4 md:w-5 md:h-5 text-primary mx-auto mb-1.5 md:mb-2" />
-              <div className="text-lg md:text-2xl lg:text-xl xl:text-2xl font-extrabold text-text-strong tracking-tight">
+              <div className="text-xl md:text-2xl lg:text-[1.75rem] xl:text-2xl font-extrabold text-text-strong tracking-tight">
                 {item.value === -1 ? (
                   <span dir="ltr">۲۴/۷</span>
                 ) : item.value > 0 ? (

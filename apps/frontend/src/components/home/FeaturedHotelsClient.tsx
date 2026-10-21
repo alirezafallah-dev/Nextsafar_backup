@@ -207,7 +207,8 @@ export default function FeaturedHotelsClient({
 }) {
   if (hotels.length === 0) return null;
   const [first, ...rest] = hotels;
-  const smallOnes = rest.slice(0, 4);
+  // ✅ فقط 2 کارت کوچک (در کل 3 کارت: 1 بزرگ + 2 کوچک)
+  const smallOnes = rest.slice(0, 2);
 
   return (
     <section className="ns-container py-8 md:py-12">

@@ -85,11 +85,6 @@ class Core {
             Taxonomies\TourismMeta::init();
         }
 
-        // ❌ REMOVED: TourCategoryMeta (tour migrated to Laravel - Section 9)
-        // if (class_exists(Taxonomies\TourCategoryMeta::class)) {
-        //     Taxonomies\TourCategoryMeta::init();
-        // }
-
         // ═══════════════════════════════════════════════════
         // CRON JOBS (Content only)
         // ═══════════════════════════════════════════════════
@@ -135,16 +130,6 @@ class Core {
                 $class::init();
             }
         }
-
-        // ❌ REMOVED: SearchEndpoint (moved to Node.js - Section 21)
-        // if (class_exists(API\SearchEndpoint::class)) API\SearchEndpoint::init();
-
-        // ═══════════════════════════════════════════════════
-        // AI TRIP PLANNER (Content - can stay for now)
-        // ═══════════════════════════════════════════════════
-        if (class_exists(Database\AiTripTable::class)) Database\AiTripTable::init();
-        if (class_exists(API\AiTripPlannerEndpoint::class)) API\AiTripPlannerEndpoint::init();
-        if (class_exists(Admin\AiTripSettings::class)) Admin\AiTripSettings::init();
     }
 
     /**
@@ -161,8 +146,6 @@ class Core {
             PostTypes\TravelGuide::class,
             PostTypes\TravelNews::class,
         ];
-
-        // ❌ REMOVED: PostTypes\Tour (migrated to Laravel - Section 9)
 
         foreach ($postTypes as $class) {
             if (class_exists($class) && method_exists($class, 'register')) {
@@ -194,8 +177,6 @@ class Core {
             Taxonomies\TravelNewsTag::class,
             Taxonomies\Tourism::class,
         ];
-
-        // ❌ REMOVED: Tour-related taxonomies (migrated to Laravel - Section 9)
 
         foreach ($taxonomies as $class) {
             if (class_exists($class) && method_exists($class, 'register')) {

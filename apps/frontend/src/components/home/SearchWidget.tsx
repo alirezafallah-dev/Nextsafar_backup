@@ -187,7 +187,7 @@ export default function SearchWidget({
                 role="tab"
                 aria-selected={active}
                 onClick={() => setTabId(t.id)}
-                className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-1 py-2 rounded-md text-[10px] font-bold whitespace-nowrap transition-all cursor-pointer ${
+                className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-1 py-2 rounded-md text-[11px] font-bold whitespace-nowrap transition-all cursor-pointer ${
                   active
                     ? "bg-primary text-white shadow-md"
                     : "text-text-muted hover:text-primary-dark"
@@ -204,7 +204,7 @@ export default function SearchWidget({
             onClick={() => setSheetOpen(true)}
             aria-haspopup="dialog"
             aria-expanded={sheetOpen}
-            className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-1 py-2 rounded-md text-[10px] font-bold transition-all cursor-pointer ${
+            className={`flex-1 min-w-0 flex items-center justify-center gap-1 px-1 py-2 rounded-md text-[11px] font-bold transition-all cursor-pointer ${
               activeContent
                 ? "bg-primary text-white shadow-md"
                 : "text-text-muted hover:text-primary-dark"

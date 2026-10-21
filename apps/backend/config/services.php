@@ -10,7 +10,7 @@ return [
     | This file is for storing the credentials for third party services such
     | as Mailgun, Postmark, AWS and more. This file provides the de facto
     | location for this type of information, allowing packages to have
-    | a conventional place to find your various credentials.
+    | a conventional file to locate the various service credentials.
     |
     */
 
@@ -43,12 +43,17 @@ return [
     'zarinpal' => [
         'merchant_id' => env('ZARINPAL_MERCHANT_ID'),
         'sandbox' => env('ZARINPAL_SANDBOX', false),
-        'callback_url' => env('ZARINPAL_CALLBACK_URL'),
+    ],
+
+    'stripe' => [
+        'key' => env('STRIPE_KEY'),
+        'secret' => env('STRIPE_SECRET'),
+        'webhook_secret' => env('STRIPE_WEBHOOK_SECRET'),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | SMS Gateways
+    | SMS Providers
     |--------------------------------------------------------------------------
     */
     'kavenegar' => [
@@ -58,41 +63,35 @@ return [
 
     /*
     |--------------------------------------------------------------------------
-    | Search Providers
+    | Google Services
     |--------------------------------------------------------------------------
     */
-    'serpapi' => [
-        'key' => env('SERPAPI_KEY'),
-    ],
-
-    'searchapi' => [
-        'key' => env('SEARCHAPI_KEY'),
-    ],
-
-    'brsapi' => [
-        'key' => env('BRAPI_KEY'),
+    'google' => [
+        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'client_secret' => env('GOOGLE_CLIENT_SECRET'),
+        'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'maps_api_key' => env('GOOGLE_MAPS_API_KEY'),
+        'places_api_key' => env('GOOGLE_PLACES_API_KEY'),
     ],
 
     /*
     |--------------------------------------------------------------------------
-    | WordPress Integration
+    | AI Trip Planner Providers
     |--------------------------------------------------------------------------
+    | Provider order: gemini → groq → qwen (fallback chain)
+    | Each provider needs its own API key configured in .env
     */
-    'wordpress' => [
-        'url' => env('WORDPRESS_SITE_URL', 'http://cms.nextsafar.local'),
-        'api_key' => env('WORDPRESS_API_KEY'),
-    ],
-
-    /*
-    |--------------------------------------------------------------------------
-    | Webhook Secrets
-    |--------------------------------------------------------------------------
-    | Shared secrets for verifying webhook signatures from external services.
-    */
-    'webhooks' => [
-        'wordpress_secret' => env('WORDPRESS_WEBHOOK_SECRET'),
-        'gateway_secret' => env('GATEWAY_WEBHOOK_SECRET'),
-        'provider_secret' => env('PROVIDER_WEBHOOK_SECRET'),
+    'trip_planner' => [
+        'provider_order' => explode(',', env('TRIP_PLANNER_PROVIDER_ORDER', 'gemini,groq,qwen')),
+        
+        'gemini_key' => env('TRIP_PLANNER_GEMINI_KEY'),
+        'gemini_model' => env('TRIP_PLANNER_GEMINI_MODEL', 'gemini-3.7-flash'),
+        
+        'groq_key' => env('TRIP_PLANNER_GROQ_KEY'),
+        'groq_model' => env('TRIP_PLANNER_GROQ_MODEL', 'llama-3.3-70b-versatile'),
+        
+        'qwen_key' => env('TRIP_PLANNER_QWEN_KEY'),
+        'qwen_model' => env('TRIP_PLANNER_QWEN_MODEL', 'qwen-plus'),
     ],
 
 ];

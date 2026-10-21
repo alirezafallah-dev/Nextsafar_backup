@@ -1,8 +1,8 @@
 "use client";
+
 import { useCallback, useEffect, useRef, useState } from "react";
-import Image from "next/image";
-import Link from "next/link";
-import { ChevronLeft, ChevronRight, MapPin } from "lucide-react";
+import { ChevronLeft, ChevronRight } from "lucide-react";
+import { StoryCard } from "@/components/shared/cards";
 
 export interface StoryItem {
   slug: string;
@@ -11,50 +11,12 @@ export interface StoryItem {
   place?: string;
 }
 
-function StoryCard({ item, eager }: { item: StoryItem; eager: boolean }) {
-  const [loaded, setLoaded] = useState(false);
-  return (
-    <Link
-      href={`/destinations/${item.slug}`}
-      className="group relative snap-start shrink-0 w-[200px] md:w-[240px] aspect-[3/4] rounded-[10px] md:rounded-lg overflow-hidden border border-border bg-bg-sec"
-    >
-      {!loaded && (
-        <div className="absolute inset-0 animate-pulse bg-gradient-to-br from-primary-lightest via-white to-primary-light" />
-      )}
-      <Image
-        src={item.image}
-        alt={item.title}
-        fill
-        sizes="(max-width: 768px) 200px, 240px"
-        quality={85}
-        loading={eager ? "eager" : "lazy"}
-        onLoad={() => setLoaded(true)}
-        className={`object-cover transition-all duration-200 group-hover:scale-105 ${
-          loaded ? "opacity-100" : "opacity-0"
-        }`}
-      />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/5 to-transparent" />
-      {item.place && (
-        <span className="absolute top-3 start-3 inline-flex items-center gap-1 px-2.5 py-1 rounded-lg bg-black/30 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold">
-          <MapPin className="w-3 h-3" /> {item.place}
-        </span>
-      )}
-      <div className="absolute bottom-0 inset-x-0 px-4 py-2">
-        <div className="text-white font-bold text-sm md:text-md leading-6 line-clamp-2 drop-shadow">
-          {item.title}
-        </div>
-      </div>
-    </Link>
-  );
-}
-
 export default function StoriesCarousel({ items }: { items: StoryItem[] }) {
   const ref = useRef<HTMLDivElement>(null);
   const [canPrev, setCanPrev] = useState(false);
   const [canNext, setCanNext] = useState(false);
-  const [mounted, setMounted] = useState(false); /* ✅ flag برای جلوگیری از hydration mismatch */
+  const [mounted, setMounted] = useState(false);
 
-  /* ✅ علامت‌گذاری mount شدن */
   useEffect(() => {
     setMounted(true);
   }, []);
@@ -90,7 +52,6 @@ export default function StoriesCarousel({ items }: { items: StoryItem[] }) {
 
   return (
     <div className="relative">
-      {/* ✅ فقط در کلاینت رندر شود (بعد از mount) */}
       {mounted && (
         <>
           <button
@@ -116,8 +77,14 @@ export default function StoriesCarousel({ items }: { items: StoryItem[] }) {
         ref={ref}
         className="ns-bleed-x flex gap-4 overflow-x-auto scrollbar-hide snap-x snap-mandatory pt-1 pb-2"
       >
-        {items.map((s, idx) => (
-          <StoryCard key={s.slug} item={s} eager={idx < 6} />
+        {items.map((item) => (
+          <StoryCard
+            key={item.slug}
+            slug={item.slug}
+            title={item.title}
+            image={item.image}
+            place={item.place}
+          />
         ))}
       </div>
     </div>

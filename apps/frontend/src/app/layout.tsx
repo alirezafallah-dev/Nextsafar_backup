@@ -34,18 +34,21 @@ export const metadata: Metadata = {
 
 // ✅ منوهای fallback
 const TEST_MAIN_MENU: MenuItem[] = [
-  { id: 1, title: 'خانه', url: '/', children: [] },
-  { id: 2, title: 'هتل', url: '/hotels', children: [] },
-  { id: 3, title: 'ویزا', url: '/visas', children: [] },
-  { id: 4, title: 'تور', url: '/tours', children: [] },
-  { id: 5, title: 'پرواز', url: '/flights', children: [] },
+  { id: 1, title: 'صفحه اصلی', url: '/', children: [] },
+  { id: 2, title: 'پرواز', url: '/flights', children: [] },
+  { id: 3, title: 'تورها', url: '/tours', children: [] },
+  { id: 4, title: 'ویزا', url: '/visas', children: [] },
+  { id: 5, title: 'درباره ما', url: '/about', children: [] },
+  { id: 6, title: 'تماس با ما', url: '/contact', children: [] },
+  { id: 7, title: 'قوانین', url: '/terms', children: [] },
 ];
 
 const TEST_SEC_MENU: MenuItem[] = [
-  { id: 101, title: 'مقاصد گردشگری', url: '/destinations', children: [] },
-  { id: 102, title: 'راهنمای سفر', url: '/travel-guides', children: [] },
-  { id: 103, title: 'اخبار گردشگری', url: '/travel-news', children: [] },
-  { id: 104, title: 'هتل', url: '/hotels', children: [] },
+  { id: 8, title: 'هتل‌ها', url: '/hotels', children: [] },
+  { id: 9, title: 'مقاصد گردشگری', url: '/travel-destination', children: [] },
+  { id: 10, title: 'راهنمای سفر', url: '/travel-guides', children: [] },
+  { id: 11, title: 'رستوران', url: '/restaurants', children: [] },
+  { id: 12, title: 'اخبار گردشگری', url: '/travel-news', children: [] },
 ];
 
 export default async function RootLayout({

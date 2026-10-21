@@ -1,8 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import ListingMap from "./ListingMap";
-import type { ListingMapPoint } from "./ListingMap";
+import ListingMap from "./map/ListingMap";
+import type { ListingMapPoint } from "./map/ListingMap";
 
 interface Props {
   mapPoints: ListingMapPoint[];

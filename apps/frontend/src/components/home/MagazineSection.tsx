@@ -7,11 +7,16 @@ import { getGuidePosts, getNewsPosts, formatFaDate } from "@/lib/api/home";
 /* ✅ مجله = فقط travelguide • اخبار = فقط travelnews */
 export default async function MagazineSection() {
   const [guides, news] = await Promise.all([
-    getGuidePosts(4),
-    getNewsPosts(6),
+    getGuidePosts(6),
+    getNewsPosts(12), // 👈 9 خبر
   ]);
   if (guides.length === 0 && news.length === 0) return null;
-  const [feature, ...restGuides] = guides;
+
+  // ✅ محدودیت نهایی: 6 راهنما + 9 خبر
+  const limitedGuides = guides.slice(0, 6);
+  const limitedNews = news.slice(0, 12);
+
+  const [feature, ...restGuides] = limitedGuides;
 
   return (
     <section className="ns-container py-8 md:py-12">
@@ -92,7 +97,7 @@ export default async function MagazineSection() {
       </div>
 
       {/* ═══ آخرین اخبار ═══ */}
-      {news.length > 0 && (
+      {limitedNews.length > 0 && (
         <>
           <SectionHeader
             className="mt-10 md:mt-14"
@@ -102,9 +107,8 @@ export default async function MagazineSection() {
             linkLabel="همه اخبار"
           />
 
-          {/* ✅ FIX: ns-bleed-x → snap روی گاتر 16px قفل می‌شه، نه لبه صفحه */}
           <div className="ns-bleed-x flex gap-2.5 overflow-x-auto snap-x snap-mandatory pb-2 md:grid md:grid-cols-2 lg:grid-cols-3 md:gap-4 md:overflow-visible md:pb-0 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-            {news.map((n) => (
+            {limitedNews.map((n) => (
               <Link
                 key={n.id}
                 href={`/travel-news/${n.slug}`}

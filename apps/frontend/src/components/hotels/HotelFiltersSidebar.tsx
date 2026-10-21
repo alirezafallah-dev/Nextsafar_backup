@@ -3,8 +3,8 @@ import {
   Search, Star, RotateCcw, Waves, Utensils, Wifi, Car, Dumbbell,
   Sparkles, Coffee, BedDouble, Users, SlidersHorizontal,
 } from "lucide-react";
-import FilterSection from "@/components/shared/FilterSection";
-import PriceRangeSlider from "@/components/shared/PriceRangeSlider";
+import FilterSection from "@/components/shared/filters/FilterSection";
+import PriceRangeSlider from "@/components/shared/filters/PriceRangeSlider";
 import { faDigits } from "@/lib/api/hotels";
 
 export interface HotelFiltersState {
@@ -137,14 +137,14 @@ export default function HotelFiltersSidebar({
           </div>
         </FilterSection>
 
-        <FilterSection title="بازه قیمت (هر شب)" icon={<BedDouble className="w-3.5 h-3.5" />}>
+        {/* <FilterSection title="بازه قیمت (هر شب)" icon={<BedDouble className="w-3.5 h-3.5" />}>
           <PriceRangeSlider
             min={0}
             max={priceMax}
             value={filters.priceRange}
             onChange={(v) => onChange({ ...filters, priceRange: v })}
           />
-        </FilterSection>
+        </FilterSection> */}
 
         <FilterSection title="امتیاز مهمان" icon={<Sparkles className="w-3.5 h-3.5" />}>
           <div className="grid grid-cols-3 gap-1.5">

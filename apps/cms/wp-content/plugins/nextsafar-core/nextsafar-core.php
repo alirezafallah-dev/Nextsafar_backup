@@ -64,7 +64,6 @@ require_once NEXTSAFAR_PATH . 'inc/media.php';
 require_once NEXTSAFAR_PATH . 'inc/database/geo-table.php';
 require_once NEXTSAFAR_PATH . 'inc/database/schema-manager.php';
 require_once NEXTSAFAR_PATH . 'inc/database/news-tables.php';
-require_once NEXTSAFAR_PATH . 'inc/database/ai-trip-table.php';
 
 // ═══════════════════════════════════════════════════════════
 // 4. GEO SYSTEM - Spatial data foundation
@@ -77,8 +76,8 @@ require_once NEXTSAFAR_PATH . 'inc/sync/place-enrich-trait.php';
 // 5. API CLIENTS - External service integrations (stubs for search)
 // ═══════════════════════════════════════════════════════════
 require_once NEXTSAFAR_PATH . 'inc/api/base-client.php';
-require_once NEXTSAFAR_PATH . 'inc/api/searchapi-client.php';  // Stub
-require_once NEXTSAFAR_PATH . 'inc/api/serpapi-client.php';    // Stub
+require_once NEXTSAFAR_PATH . 'inc/api/searchapi-client.php'; 
+require_once NEXTSAFAR_PATH . 'inc/api/serpapi-client.php'; 
 require_once NEXTSAFAR_PATH . 'inc/api/image-manager.php';
 require_once NEXTSAFAR_PATH . 'inc/api/wikipedia-client.php';
 require_once NEXTSAFAR_PATH . 'inc/api/rate-limiter.php';
@@ -121,7 +120,6 @@ require_once NEXTSAFAR_PATH . 'inc/posttypes/hospital.php';
 require_once NEXTSAFAR_PATH . 'inc/posttypes/visa.php';
 require_once NEXTSAFAR_PATH . 'inc/posttypes/travelguide.php';
 require_once NEXTSAFAR_PATH . 'inc/posttypes/travelnews.php';
-// ❌ tour.php removed - migrated to Laravel (Section 9)
 
 // ═══════════════════════════════════════════════════════════
 // 10. TAXONOMIES - Categories and tags (Section 5.3)
@@ -145,7 +143,6 @@ require_once NEXTSAFAR_PATH . 'inc/taxonomies/travelnews-tag.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/term-images.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/tourism.php';
 require_once NEXTSAFAR_PATH . 'inc/taxonomies/tourism-meta.php';
-// ❌ tour-category.php, tour-tag.php removed - migrated to Laravel
 
 // ═══════════════════════════════════════════════════════════
 // 11. METABOXES - Custom fields in editor (content only)
@@ -189,11 +186,7 @@ require_once NEXTSAFAR_PATH . 'inc/api/stats-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/api/world-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/api/country-posts-endpoint.php';
 require_once NEXTSAFAR_PATH . 'inc/api/featured-hotels-endpoint.php';
-require_once NEXTSAFAR_PATH . 'inc/api/ai-trip-gemini-client.php';
-require_once NEXTSAFAR_PATH . 'inc/api/ai-trip-planner-endpoint.php';
-require_once NEXTSAFAR_PATH . 'inc/admin/ai-trip-settings.php';
 require_once NEXTSAFAR_PATH . 'inc/api/map-endpoint.php';
-require_once NEXTSAFAR_PATH . 'inc/api/ai-providers.php';
 require_once NEXTSAFAR_PATH . 'inc/api/post-sync.php';
 
 // ═══════════════════════════════════════════════════════════

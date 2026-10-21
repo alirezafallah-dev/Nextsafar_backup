@@ -64,22 +64,37 @@ export async function GET(
       hotels: mockFeaturedHotels.slice(0, 8),
     });
   }
-  
+    
   // ✅ Menus
   if (fullPath.includes('nextsafar/v1/menus/')) {
     const slug = path[path.length - 1];
     const menus: Record<string, any[]> = {
       mainmenu: [
         { id: 1, title: 'صفحه اصلی', url: '/', slug: 'home' },
+        { id: 2, title: 'پرواز', url: '/flights', slug: 'flights' },
+        { id: 3, title: 'تورها', url: '/tours', slug: 'tours' },
+        { id: 4, title: 'ویزا', url: '/visas', slug: 'visas' },
+        { id: 5, title: 'درباره ما', url: '/about', slug: 'about' },
+        { id: 6, title: 'تماس با ما', url: '/contact', slug: 'contact' },
+        { id: 7, title: 'قوانین', url: '/terms', slug: 'terms' }
+      ],
+      secmenu: [
+        { id: 8, title: 'هتل‌ها', url: '/hotels', slug: 'hotels' },
+        { id: 9, title: 'مقاصد گردشگری', url: '/travel-destination', slug: 'travel-destination' },
+        { id: 10, title: 'راهنمای سفر', url: '/travel-guides', slug: 'travel-guides' },
+        { id: 11, title: 'رستوران', url: '/restaurants', slug: 'restaurants' },
+        { id: 12, title: 'اخبار گردشگری', url: '/travel-news', slug: 'travel-news' }
+      ],
+      mobilemenu: [
+        { id: 1, title: 'صفحه اصلی', url: '/', slug: 'home' },
         { id: 2, title: 'هتل‌ها', url: '/hotels', slug: 'hotels' },
         { id: 3, title: 'تورها', url: '/tours', slug: 'tours' },
         { id: 4, title: 'ویزا', url: '/visas', slug: 'visas' },
-      ],
-      secmenu: [
-        { id: 5, title: 'درباره ما', url: '/about', slug: 'about' },
-        { id: 6, title: 'تماس با ما', url: '/contact', slug: 'contact' },
-      ],
-      mobilemenu: [],
+        { id: 5, title: 'راهنمای سفر', url: '/travel-guides', slug: 'travel-guides' },
+        { id: 6, title: 'اخبار گردشگری', url: '/travel-news', slug: 'travel-news' },
+        { id: 7, title: 'درباره ما', url: '/about', slug: 'about' },
+        { id: 8, title: 'تماس با ما', url: '/contact', slug: 'contact' }
+      ]
     };
     return NextResponse.json({ items: menus[slug] || [] });
   }

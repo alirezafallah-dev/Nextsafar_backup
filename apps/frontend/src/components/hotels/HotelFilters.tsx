@@ -57,7 +57,7 @@ export default function HotelFilters({ filters, onChange, maxPrice }: Props) {
       </div>
 
       {/* بازه قیمت */}
-      <div>
+      {/* <div>
         <label className="text-xs font-bold text-text-muted mb-2 block">
           حداکثر قیمت: {faDigits(filters.maxPrice.toLocaleString())} تومان
         </label>
@@ -70,7 +70,7 @@ export default function HotelFilters({ filters, onChange, maxPrice }: Props) {
           onChange={(e) => update({ maxPrice: parseInt(e.target.value) })}
           className="w-full accent-primary"
         />
-      </div>
+      </div> */}
 
       {/* امکانات */}
       <div>

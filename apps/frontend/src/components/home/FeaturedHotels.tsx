@@ -37,6 +37,9 @@ export default async function FeaturedHotels() {
     hotels = [];
   }
 
+  // ✅ محدودیت نهایی: فقط 3 هتل
+  hotels = hotels.slice(0, 3);
+
   if (hotels.length === 0) return null;
   
   return <FeaturedHotelsClient hotels={hotels} />;

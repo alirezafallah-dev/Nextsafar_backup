@@ -1,0 +1,8 @@
+[2026-10-09 06:48:32] [info] Booking table created/upgraded | {"table":"ns_ns_bookings","version":"1.0.0"}
+[2026-10-09 06:48:32] [info] Payment table created/upgraded | {"table":"ns_ns_payments","version":"1.0.0"}
+[2026-10-09 06:48:32] [info] Booking passenger table created/upgraded | {"table":"ns_ns_booking_passengers"}
+[2026-10-09 06:48:32] [info] Booking document table created/upgraded | {"table":"ns_ns_booking_documents"}
+[2026-10-09 07:04:44] [info] Booking table created/upgraded | {"table":"ns_ns_bookings","version":"1.0.0"}
+[2026-10-09 07:04:44] [info] Payment table created/upgraded | {"table":"ns_ns_payments","version":"1.0.0"}
+[2026-10-09 07:04:44] [info] Booking passenger table created/upgraded | {"table":"ns_ns_booking_passengers"}
+[2026-10-09 07:04:44] [info] Booking document table created/upgraded | {"table":"ns_ns_booking_documents"}

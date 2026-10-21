@@ -17,22 +17,23 @@ function pickMeta(p: any, keys: string[]): any {
   return null;
 }
 
-/* ═══ شهر هتل از چند منبع ═══ */
 function extractHotelCity(p: any): string {
   const metaCity = pickMeta(p, ["_hotel_city", "_geo_city", "city"]);
   if (metaCity) return clean(metaCity);
+
   const hotelCats = p._embedded?.["wp:term"]?.find(
     (arr: any) => Array.isArray(arr) && arr[0]?.taxonomy === "hotel_category",
   );
   if (hotelCats?.length) return clean(hotelCats[0].name);
+
   const tourism = p._embedded?.["wp:term"]?.find(
     (arr: any) => Array.isArray(arr) && arr[0]?.taxonomy === "tourism",
   );
   if (tourism?.length) return clean(tourism[0].name);
+
   return clean(p._embedded?.["wp:term"]?.[0]?.[0]?.name) || "";
 }
 
-/* ═══ دسته‌بندی تور: کوچک‌ترین دسته‌ها + تصویر از REST Field ═══ */
 async function getTourCategories(): Promise<TourCatItem[]> {
   try {
     const res = await fetch(
@@ -40,6 +41,7 @@ async function getTourCategories(): Promise<TourCatItem[]> {
       { next: { revalidate: 3600 } },
     );
     if (!res.ok) return [];
+
     const terms: any[] = await res.json();
     return terms
       .filter((t) => t.count > 0 && t.name)
@@ -69,23 +71,38 @@ export default async function TrendingNow() {
 
   const hotels: HotelItem[] = (hotelPosts as any[])
     .map((p) => ({
+      id: p.id || 0,
       slug: p.slug,
       title: clean(p.title?.rendered),
+      title_en: clean(p.meta?._hotel_title_en || ""),
       image:
         getBestImageUrl(p._embedded?.["wp:featuredmedia"]?.[0], IMG_TARGETS.card) ||
         null,
+      gallery: p.meta?._hotel_gallery?.map((g: any) => g.url) || [],
       stars: Number(pickMeta(p, ["_hotel_stars", "stars"])) || null,
       city: extractHotelCity(p),
+      address: clean(p.meta?._hotel_address || extractHotelCity(p)),
       price: Number(pickMeta(p, ["_hotel_price", "price"])) || null,
+      price_per_night: 0, // قیمت فعلاً نمایش داده نمی‌شود
       rating: Number(pickMeta(p, ["_hotel_rating", "rating"])) || null,
+      reviews: Number(pickMeta(p, ["_hotel_reviews", "reviews"])) || 0,
+      amenities: p.meta?._hotel_amenities || [],
+      featured: Boolean(pickMeta(p, ["_hotel_featured", "featured"])),
+      coordinates: {
+        lat: Number(pickMeta(p, ["_hotel_lat", "lat"])) || 0,
+        lng: Number(pickMeta(p, ["_hotel_lng", "lng"])) || 0,
+      },
     }))
-    .filter((i) => i.title);
+    .filter((i) => i.title)
+    .slice(0, 8);
 
-  if (!hotels.length && !tourCats.length) return null;
+  const finalTourCats = tourCats.slice(0, 8);
+
+  if (!hotels.length && !finalTourCats.length) return null;
 
   return (
     <section className="ns-container py-8 md:py-12">
-      <TrendingClient hotels={hotels} tourCats={tourCats} />
+      <TrendingClient hotels={hotels} tourCats={finalTourCats} />
     </section>
   );
 }

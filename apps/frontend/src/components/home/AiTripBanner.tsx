@@ -5,7 +5,7 @@ export default function AiTripBanner() {
   return (
     <section className="ns-container py-8 md:py-12">
       {/* ═══ کارت گرادیان تیره ═══ */}
-      <div className="relative overflow-hidden rounded-lg md:rounded-[20px] bg-gradient-to-br from-primary-dark via-primary to-primary-dark p-6 md:p-10 text-white">
+      <div className="relative overflow-hidden rounded-lg md:rounded-2xl bg-gradient-to-br from-primary-dark via-primary to-primary-dark p-6 md:p-10 text-white">
         {/* پس‌زمینه دکوراتیو */}
         <div className="absolute inset-0 opacity-10">
           <div className="absolute top-0 end-0 w-96 h-96 bg-white rounded-full blur-3xl -translate-y-1/2 translate-x-1/2" />

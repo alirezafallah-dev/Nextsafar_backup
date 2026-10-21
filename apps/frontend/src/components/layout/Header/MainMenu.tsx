@@ -8,7 +8,7 @@ import { MenuItem } from "@/types/menu";
 interface MainMenuProps {
   items: MenuItem[];
   variant?: "primary" | "secondary";
-  onAiTripClick?: () => void; // ✅ پروپ جدید
+  onAiTripClick?: () => void;
 }
 
 export default function MainMenu({ items, variant = "primary", onAiTripClick }: MainMenuProps) {
@@ -19,7 +19,7 @@ export default function MainMenu({ items, variant = "primary", onAiTripClick }: 
   return (
     <nav className="flex items-center gap-1">
       {/* آیتم‌های منوی اصلی */}
-      {/* {items.map((item) => (
+      {items.map((item) => (
         <Link
           key={item.id}
           href={item.url}
@@ -31,9 +31,9 @@ export default function MainMenu({ items, variant = "primary", onAiTripClick }: 
         >
           {item.title}
         </Link>
-      ))} */}
+      ))}
 
-      {/* ✅ تب جدید: سفر هوشمند */}
+      {/* تب جدید: سفر هوشمند */}
       <button
         type="button"
         onClick={onAiTripClick}

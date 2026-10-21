@@ -1,0 +1,5 @@
+[20-Oct-2026 18:12:59 UTC] [NextSafar] AI Trip Planner endpoint called but service is deprecated
+[20-Oct-2026 18:12:59 UTC] 📅 All cron schedules cleared
+[20-Oct-2026 18:13:06 UTC] [NextSafar] AI Trip Planner endpoint called but service is deprecated
+[20-Oct-2026 18:13:07 UTC] 📅 All cron schedules cleared
+[20-Oct-2026 18:13:07 UTC] PHP Warning:  foreach() argument must be of type array|object, null given in /tmp/admin_test.php on line 19
