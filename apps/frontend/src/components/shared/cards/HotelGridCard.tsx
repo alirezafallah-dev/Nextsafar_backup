@@ -181,7 +181,7 @@ const HotelGridCard = memo(function HotelGridCard({ hotel, showPrice = false }: 
           )}
         </div>
 
-        <div className="flex items-center gap-1.5 mb-3 min-w-0">
+        <div className="flex items-center gap-1.5 min-w-0">
           {visibleAmenities.length > 0 ? (
             visibleAmenities.map((amenity, i) => {
               const Icon = amenity.icon;
