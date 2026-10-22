@@ -14,8 +14,12 @@ import MobileFilterChips from "./sections/MobileFilterChips";
 import HotelSidebar from "./sections/HotelSidebar";
 import HotelResults from "./sections/HotelResults";
 import MobileHotelMap from "./sections/MobileHotelMap";
-import HotelBottomSections from "./sections/HotelBottomSections";
 import MobileFilterSheet from "./MobileFilterSheet";
+
+// Bottom Sections (Direct Import)
+import HotelGuideSection from "./HotelGuideSection";
+import HotelByTripType from "./HotelByTripType";
+import HotelFAQ from "./HotelFAQ";
 
 interface Props {
   data: HotelsData;
@@ -84,7 +88,9 @@ export default function HotelsPage({ data }: Props) {
       </div>
 
       {/* Bottom Sections */}
-      <HotelBottomSections />
+      <HotelGuideSection />
+      <HotelByTripType />
+      <HotelFAQ />
 
       {/* Mobile Map */}
       <MobileHotelMap

@@ -1,30 +1,33 @@
-// src/components/shared/cards/GuideCard.tsx
 "use client";
 
 import Link from "next/link";
 import Image from "next/image";
 import { BookOpen, ArrowLeft } from "lucide-react";
 
-export interface GuideCardProps {
+export interface PostCardProps {
   slug: string;
   title: string;
   excerpt: string;
   image: string;
   category: string;
   readTime: string;
+  href?: string;
 }
 
-export default function GuideCard({
+export default function PostCard({
   slug,
   title,
   excerpt,
   image,
   category,
   readTime,
-}: GuideCardProps) {
+  href,
+}: PostCardProps) {
+  const finalHref = href || `/travel-guides/${slug}`;
+
   return (
     <Link
-      href={`/travel-guides/${slug}`}
+      href={finalHref}
       className="group rounded-[10px] sm:rounded-lg border border-border bg-white overflow-hidden hover:shadow-card-hover hover:-translate-y-1 transition-all duration-300 flex-shrink-0 w-[280px] md:w-auto snap-start cursor-pointer"
     >
       <div className="relative aspect-[16/10] bg-bg-sec overflow-hidden">
@@ -39,7 +42,7 @@ export default function GuideCard({
           {category}
         </span>
       </div>
-      
+
       <div className="p-3 md:p-4 flex flex-col gap-2">
         <h3 className="font-bold text-sm md:text-[15px] leading-6 line-clamp-2 group-hover:text-primary transition-colors">
           {title}
@@ -47,13 +50,13 @@ export default function GuideCard({
         <p className="text-[11px] md:text-xs text-text-muted leading-6 line-clamp-2">
           {excerpt}
         </p>
-        
+
         <div className="flex items-center justify-between mt-2 pt-2 border-t border-divider">
           <div className="flex items-center gap-1 text-[10px] text-text-muted">
             <BookOpen className="w-3 h-3" />
             <span>{readTime} مطالعه</span>
           </div>
-          <ArrowLeft className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 group-hover:-translate-x-1 transition-all rtl:rotate-180" />
+          <ArrowLeft className="w-4 h-4 text-primary opacity-0 group-hover:opacity-100 group-hover:-translate-x-1 transition-all" />
         </div>
       </div>
     </Link>

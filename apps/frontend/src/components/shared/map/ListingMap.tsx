@@ -1,350 +1,95 @@
 "use client";
 
-import { useEffect, useRef, useState, useCallback, memo } from "react";
-import { Maximize2 } from "lucide-react";
-import { loadLeaflet, waitForSize } from "@/lib/map-loader";
-import { getMapConfig } from "@/lib/api/map";
-import {
-  addTiles,
-  makeMarkerIcon,
-  makeActiveMarkerIcon,
-  colorOf,
-} from "@/components/map/map-icons";
-import type { ListingMapPoint } from "./types";
-import MapControls from "./MapControls";
-import MapModal from "./MapModal";
-import MapLoading from "./MapLoading";
+import { useMemo, memo } from "react";
+import NextSafarMap from "@/components/map/NextSafarMap";
+import type { MapPoint } from "@/components/map/renderers";
 
-const HOVER_ZOOM_LEVEL = 15;
-const MIN_ZOOM_FOR_MARKERS = 11;
+export interface ListingMapPoint {
+  key: string;
+  lat: number;
+  lng: number;
+  title: string;
+  price?: number | null;
+  isSite?: boolean;
+  href?: string | null;
+  type?: string;
+  locationType?: string;
+}
 
 interface ListingMapProps {
   points: ListingMapPoint[];
+  height?: number | string;
+  className?: string;
   activeKey?: string | null;
-  height?: number;
   onPointClick?: (key: string) => void;
   onPointHover?: (key: string | null) => void;
-  className?: string;
+  showControls?: boolean;
+  showFullscreen?: boolean;
+  fitBounds?: boolean;
+  markerStyle?: "pill" | "numbered" | "category";
 }
 
+/**
+ * کامپوننت نقشه برای لیست‌ها (هتل‌ها، رستوران‌ها و ...)
+ * از NextSafarMap استفاده می‌کند برای یکپارچگی کامل
+ */
 const ListingMap = memo(function ListingMap({
   points,
+  height = 300,
+  className = "",
   activeKey = null,
-  height = 600,
   onPointClick,
   onPointHover,
-  className = "",
+  showControls = false,
+  showFullscreen = false,
+  fitBounds = true,
+  markerStyle = "pill",
 }: ListingMapProps) {
-  const mapRef = useRef<HTMLDivElement>(null);
-  const mapInstance = useRef<any>(null);
-  const markersRef = useRef<Map<string, any>>(new Map());
-  const [isLoaded, setIsLoaded] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const prevActiveKeyRef = useRef<string | null>(null);
-  const flyTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  const validPoints = useCallback(() => {
-    return points.filter(
-      (p) =>
-        typeof p.lat === "number" &&
-        typeof p.lng === "number" &&
-        !isNaN(p.lat) &&
-        !isNaN(p.lng) &&
-        p.lat !== 0 &&
-        p.lng !== 0
-    );
-  }, [points]);
-
-  const handlePointClick = useCallback(
-    (key: string) => onPointClick?.(key),
-    [onPointClick]
+  // تبدیل ListingMapPoint به MapPoint
+  const mapPoints: MapPoint[] = useMemo(
+    () =>
+      points.map((p) => ({
+        key: p.key,
+        lat: p.lat,
+        lng: p.lng,
+        title: p.title,
+        price: p.price,
+        isSite: p.isSite,
+        href: p.href,
+        type: p.type || "hotel",
+        locationType: p.locationType || "",
+      })),
+    [points]
   );
 
-  const handlePointHover = useCallback(
-    (key: string | null) => onPointHover?.(key),
-    [onPointHover]
-  );
-
-  /* ═══ راه‌اندازی نقشه اصلی ═══ */
-  useEffect(() => {
-    let cancelled = false;
-    let map: any = null;
-
-    (async () => {
-      const [L, cfg] = await Promise.all([loadLeaflet(), getMapConfig()]);
-      if (cancelled || !mapRef.current) return;
-
-      await waitForSize(mapRef.current);
-      if (cancelled || !mapRef.current) return;
-
-      map = L.map(mapRef.current, {
-        zoomControl: false,
-        attributionControl: false,
-      });
-
-      addTiles(L, map, cfg);
-      mapInstance.current = map;
-
-      const validPts = validPoints();
-      if (validPts.length > 0) {
-        const latLngs = validPts.map((p) => L.latLng(p.lat, p.lng));
-        const bounds = L.latLngBounds(latLngs);
-        try {
-          map.fitBounds(bounds, { padding: [50, 50], maxZoom: 11 });
-        } catch (err) {
-          console.warn("[ListingMap] fitBounds error:", err);
-          map.setView([35.6892, 51.389], 5);
-        }
-      } else {
-        map.setView([35.6892, 51.389], 5);
-      }
-
-      setIsLoaded(true);
-    })();
-
-    return () => {
-      cancelled = true;
-      if (map) {
-        map.remove();
-        map = null;
-      }
-      mapInstance.current = null;
-      markersRef.current.clear();
-    };
-  }, [validPoints]);
-
-  /* ═══ مدیریت مارکرها ═══ */
-  useEffect(() => {
-    if (!isLoaded || !mapInstance.current) return;
-
-    const L = (window as any).L;
-    if (!L) return;
-
-    const map = mapInstance.current;
-
-    markersRef.current.forEach((m) => {
-      try {
-        m.remove();
-      } catch (err) {}
-    });
-    markersRef.current.clear();
-
-    if (map.getZoom() < MIN_ZOOM_FOR_MARKERS) return;
-
-    points.forEach((point) => {
-      if (
-        typeof point.lat !== "number" ||
-        typeof point.lng !== "number" ||
-        isNaN(point.lat) ||
-        isNaN(point.lng)
-      )
-        return;
-
-      try {
-        const latLng = L.latLng(point.lat, point.lng);
-        const isActive = point.key === activeKey;
-        const icon = isActive
-          ? makeActiveMarkerIcon(L, colorOf(point.type), point.type, point.locationType || "")
-          : makeMarkerIcon(L, colorOf(point.type), point.type, point.locationType || "");
-
-        const marker = L.marker(latLng, { icon })
-          .addTo(map)
-          .on("click", () => handlePointClick(point.key))
-          .on("mouseover", () => handlePointHover(point.key))
-          .on("mouseout", () => handlePointHover(null));
-
-        markersRef.current.set(point.key, marker);
-      } catch (err) {
-        console.warn("[ListingMap] Error creating marker:", point.key, err);
-      }
-    });
-  }, [points, isLoaded, activeKey, handlePointClick, handlePointHover]);
-
-  /* ═══ هایلایت و زوم هنگام hover ═══ */
-  useEffect(() => {
-    if (!isLoaded || !mapInstance.current) return;
-
-    const map = mapInstance.current;
-    const L = (window as any).L;
-    if (!L) return;
-
-    if (activeKey !== prevActiveKeyRef.current) {
-      prevActiveKeyRef.current = activeKey;
-
-      if (flyTimeoutRef.current) {
-        clearTimeout(flyTimeoutRef.current);
-        flyTimeoutRef.current = null;
-      }
-
-      if (activeKey) {
-        const point = points.find((p) => p.key === activeKey);
-        if (!point) return;
-
-        const marker = markersRef.current.get(activeKey);
-        try {
-          const latLng = L.latLng(point.lat, point.lng);
-          if (marker) {
-            marker.setIcon(
-              makeActiveMarkerIcon(L, colorOf(point.type), point.type, point.locationType || "")
-            );
-          } else {
-            const newMarker = L.marker(latLng, {
-              icon: makeActiveMarkerIcon(L, colorOf(point.type), point.type, point.locationType || ""),
-            })
-              .addTo(map)
-              .on("click", () => handlePointClick(point.key))
-              .on("mouseover", () => handlePointHover(point.key))
-              .on("mouseout", () => handlePointHover(null));
-            markersRef.current.set(point.key, newMarker);
-          }
-        } catch (err) {
-          console.warn("[ListingMap] Icon swap error:", err);
-          return;
-        }
-
-        const keyForTimeout = activeKey;
-        flyTimeoutRef.current = setTimeout(() => {
-          try {
-            const freshPoint = points.find((p) => p.key === keyForTimeout);
-            if (!freshPoint) return;
-            const latLng = L.latLng(freshPoint.lat, freshPoint.lng);
-            map.flyTo(latLng, HOVER_ZOOM_LEVEL, {
-              animate: true,
-              duration: 0.8,
-              easeLinearity: 0.25,
-            });
-          } catch (err) {}
-          flyTimeoutRef.current = null;
-        }, 100);
-      } else {
-        markersRef.current.forEach((marker, key) => {
-          const point = points.find((p) => p.key === key);
-          if (point) {
-            try {
-              marker.setIcon(
-                makeMarkerIcon(L, colorOf(point.type), point.type, point.locationType || "")
-              );
-            } catch (err) {}
-          }
-        });
-      }
-    }
-  }, [activeKey, isLoaded, points, handlePointClick, handlePointHover]);
-
-  useEffect(() => {
-    return () => {
-      if (flyTimeoutRef.current) clearTimeout(flyTimeoutRef.current);
-    };
-  }, []);
-
-  /* ═══ کنترل‌ها ═══ */
-  const handleZoomIn = () => {
-    try {
-      mapInstance.current?.zoomIn();
-    } catch (err) {}
-  };
-
-  const handleZoomOut = () => {
-    try {
-      mapInstance.current?.zoomOut();
-    } catch (err) {}
-  };
-
-  const handleLocate = () => {
-    if (!mapInstance.current) return;
-    const L = (window as any).L;
-    if (!L || !navigator.geolocation) return;
-
-    navigator.geolocation.getCurrentPosition(
-      (pos) => {
-        try {
-          const { latitude, longitude } = pos.coords;
-          if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return;
-          const latLng = L.latLng(latitude, longitude);
-          mapInstance.current.setView(latLng, 13);
-          L.marker(latLng, {
-            icon: makeMarkerIcon(L, "#ef4444", "center", ""),
-          })
-            .addTo(mapInstance.current)
-            .bindPopup("موقعیت شما")
-            .openPopup();
-        } catch (err) {
-          console.error("[ListingMap] Locate error:", err);
-        }
-      },
-      () => alert("دسترسی به موقعیت مکانی رد شد")
+  if (mapPoints.length === 0) {
+    return (
+      <div
+        className={`ns-map bg-bg-sec flex items-center justify-center ${className}`}
+        style={{ height: typeof height === "number" ? height : height }}
+      >
+        <span className="text-sm text-text-muted">مکانی یافت نشد</span>
+      </div>
     );
-  };
-
-  const handleResetView = () => {
-    if (!mapInstance.current) return;
-    const L = (window as any).L;
-    if (!L) return;
-
-    const validPts = validPoints();
-    if (validPts.length === 0) return;
-
-    try {
-      const latLngs = validPts.map((p) => L.latLng(p.lat, p.lng));
-      const bounds = L.latLngBounds(latLngs);
-      mapInstance.current.flyToBounds(bounds, {
-        padding: [50, 50],
-        maxZoom: 11,
-        animate: true,
-        duration: 0.8,
-      });
-    } catch (err) {
-      console.warn("[ListingMap] ResetView error:", err);
-    }
-  };
-
-  const compact = height < 250;
-  const validCount = validPoints().length;
+  }
 
   return (
-    <>
-      <div className={`relative ${className}`} style={{ height }}>
-        <div ref={mapRef} className="w-full h-full rounded-md bg-bg-sec" />
-
-        {!isLoaded && <MapLoading />}
-
-        {isLoaded && (
-          <MapControls
-            onResetView={handleResetView}
-            onLocate={handleLocate}
-            onZoomIn={handleZoomIn}
-            onZoomOut={handleZoomOut}
-            compact={compact}
-          />
-        )}
-
-        {/* دکمه تمام‌صفحه */}
-        {isLoaded && (
-          <button
-            type="button"
-            onClick={() => setIsFullscreen(true)}
-            className={`absolute ${
-              compact ? "bottom-3 end-3" : "bottom-4 end-4"
-            } z-[400] flex items-center gap-2 ${
-              compact ? "px-3 py-2 rounded-lg text-[10px]" : "px-4 py-2.5 rounded-xl text-xs"
-            } bg-primary hover:bg-primary-dark text-white shadow-lg hover:shadow-xl transition-all font-bold cursor-pointer group`}
-          >
-            <Maximize2
-              className={`${compact ? "w-3.5 h-3.5" : "w-4 h-4"} group-hover:scale-110 transition-transform`}
-            />
-            نقشه تمام‌صفحه
-          </button>
-        )}
-      </div>
-
-      {/* مودال تمام‌صفحه */}
-      <MapModal
-        isOpen={isFullscreen}
-        onClose={() => setIsFullscreen(false)}
-        points={points}
-        onPointClick={handlePointClick}
-      />
-    </>
+    <NextSafarMap
+      points={mapPoints}
+      height={height}
+      className={className}
+      activeKey={activeKey}
+      onPointClick={onPointClick}
+      onPointHover={onPointHover}
+      showControls={showControls}
+      showFullscreen={showFullscreen}
+      fitBounds={fitBounds}
+      markerStyle={markerStyle}
+      zoom={5}
+      maxZoom={14}
+      scrollWheelZoom={false}
+      dragging={true}
+    />
   );
 });
 
