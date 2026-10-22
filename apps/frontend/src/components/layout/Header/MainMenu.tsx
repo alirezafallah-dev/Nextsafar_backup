@@ -23,7 +23,7 @@ export default function MainMenu({ items, variant = "primary", onAiTripClick }: 
         <Link
           key={item.id}
           href={item.url}
-          className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+          className={`px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
             isActive(item.url)
               ? "text-primary-dark"
               : "text-text-muted hover:text-primary-dark hover:bg-primary-lightest/50"
@@ -37,7 +37,7 @@ export default function MainMenu({ items, variant = "primary", onAiTripClick }: 
       <button
         type="button"
         onClick={onAiTripClick}
-        className={`flex items-center gap-1.5 px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
+        className={`flex items-center gap-1.5 px-4 py-2 rounded-md text-sm font-medium transition-colors whitespace-nowrap ${
           pathname === "/ai-trip"
             ? "text-primary-dark"
             : "text-text-muted hover:text-primary-dark hover:bg-primary-lightest/50"

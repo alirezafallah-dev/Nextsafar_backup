@@ -67,7 +67,7 @@ function FAQItem({ q, a, index }: { q: string; a: string; index: number }) {
 
 export default function HotelFAQ() {
   return (
-    <section className="ns-container py-8 md:py-12">
+    <section className="py-8 md:py-12">
       <SectionHeader
         title="سوالات متداول درباره هتل‌ها"
         subtitle="پاسخ به پرسش‌های رایج مسافران درباره اقامت در هتل"

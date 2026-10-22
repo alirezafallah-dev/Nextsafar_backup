@@ -43,7 +43,7 @@ const guides = [
 
 export default function HotelGuideSection() {
   return (
-    <section className="ns-container py-8 md:py-12">
+    <section className="py-8 md:py-12">
       <SectionHeader
         title="راهنمای انتخاب هتل"
         subtitle="همه چیزهایی که قبل از رزرو باید بدانید"
