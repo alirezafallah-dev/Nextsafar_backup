@@ -2,7 +2,7 @@
 
 import { SlidersHorizontal } from "lucide-react";
 import { faDigits } from "@/lib/api/hotels";
-import { SortSelect, ViewToggle } from "@/components/shared/ui";
+import { SortSelect, ViewToggle } from "@/components/shared/common";
 import { SORT_OPTIONS } from "../constants";
 import type { SortKey, ViewMode } from "../constants";
 

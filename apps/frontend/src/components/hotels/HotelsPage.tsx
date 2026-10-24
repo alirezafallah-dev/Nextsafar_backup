@@ -13,7 +13,6 @@ import HotelToolbar from "./sections/HotelToolbar";
 import MobileFilterChips from "./sections/MobileFilterChips";
 import HotelSidebar from "./sections/HotelSidebar";
 import HotelResults from "./sections/HotelResults";
-import MobileHotelMap from "./sections/MobileHotelMap";
 import MobileFilterSheet from "./MobileFilterSheet";
 
 // Bottom Sections (Direct Import)
@@ -91,13 +90,6 @@ export default function HotelsPage({ data }: Props) {
       <HotelGuideSection />
       <HotelByTripType />
       <HotelFAQ />
-
-      {/* Mobile Map */}
-      <MobileHotelMap
-        mapPoints={mapPoints}
-        hoveredKey={hoveredKey}
-        onHoverChange={setHoveredKey}
-      />
 
       {/* Mobile Filter Sheet */}
       <MobileFilterSheet
