@@ -1,0 +1,380 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Models\User;
+use App\Modules\Document\Enums\DocumentCategory;
+use App\Modules\Document\Enums\DocumentVisibility;
+use App\Modules\Document\Models\Document;
+use App\Modules\Document\Services\DocumentService;
+use App\Modules\Visa\Enums\VisaCaseStatus;
+use App\Modules\Visa\Models\VisaCase;
+use App\Modules\Visa\Models\VisaType;
+use App\Modules\Visa\Services\VisaCaseService;
+use Illuminate\Console\Command;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Event;
+
+class TestVisaService extends Command
+{
+    protected $signature = 'test:visa-service';
+    protected $description = 'Test Visa Case Service (Phase 5.2.3)';
+
+    public function handle(): int
+    {
+        $this->info('');
+        $this->info('╔══════════════════════════════════════════════╗');
+        $this->info('║     🛂 Visa Service Test (Phase 5.2.3)        ║');
+        $this->info('╚══════════════════════════════════════════════╝');
+        $this->info('');
+
+        // لاگین کاربر برای تست‌ها
+        $user = $this->getTestUser();
+        Auth::login($user);
+
+        // جلوگیری از dispatch events واقعی
+        Event::fake();
+
+        $tests = [
+            'create_case' => $this->testCreateCase(),
+            'status_transitions' => $this->testStatusTransitions(),
+            'document_attachment' => $this->testDocumentAttachment(),
+            'document_verification' => $this->testDocumentVerification(),
+            'checklist_status' => $this->testChecklistStatus(),
+            'add_passenger' => $this->testAddPassenger(),
+            'add_note' => $this->testAddNote(),
+            'timeline_records' => $this->testTimelineRecords(),
+        ];
+
+        Auth::logout();
+
+        $this->newLine();
+        $this->info('╔══════════════════════════════════════════════╗');
+        $this->info('║            📊 RESULTS                         ║');
+        $this->info('╚══════════════════════════════════════════════╝');
+
+        $passed = 0;
+        foreach ($tests as $test => $result) {
+            if ($result) {
+                $this->info("  ✅ {$test}");
+                $passed++;
+            } else {
+                $this->error("  ❌ {$test}");
+            }
+        }
+
+        $this->newLine();
+        $this->info("Passed: {$passed}/" . count($tests));
+
+        return $passed === count($tests) ? 0 : 1;
+    }
+
+    private function getTestUser(): User
+    {
+        $user = User::whereHas('roles', fn($q) => $q->where('slug', 'super_admin'))->first();
+        if ($user) return $user;
+
+        return User::firstOrCreate(
+            ['email' => 'visa-test@nextsafar.local'],
+            [
+                'name' => 'Visa Test User',
+                'phone' => '0912' . rand(1000000, 9999999),
+                'password' => bcrypt('password'),
+                'is_active' => true,
+            ]
+        );
+    }
+
+    private function testCreateCase(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase(
+                userId: $user->id,
+                visaTypeId: $visaType->id,
+                data: ['intended_travel_date' => now()->addMonths(2)],
+            );
+
+            $this->line("   Code: {$case->code}");
+            $this->line("   Status: {$case->status_label}");
+            $this->line("   Total: " . number_format($case->total_amount));
+            $this->line("   SLA days: {$case->sla_days}");
+            $this->line("   Checklist items: {$case->total_checklist_items}");
+
+            $success = $case->status === VisaCaseStatus::REGISTERED
+                && !empty($case->code)
+                && $case->total_amount > 0;
+
+            // Cleanup
+            $case->forceDelete();
+
+            return $success;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function testStatusTransitions(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase($user->id, $visaType->id);
+
+            // REGISTERED → DOCUMENTS_INCOMPLETE (valid)
+            $case = $service->changeStatus($case, VisaCaseStatus::DOCUMENTS_INCOMPLETE, 'بررسی اولیه');
+            $this->line("   REGISTERED → DOCUMENTS_INCOMPLETE: OK");
+
+            // DOCUMENTS_INCOMPLETE → DOCUMENTS_COMPLETE (valid)
+            $case = $service->changeStatus($case, VisaCaseStatus::DOCUMENTS_COMPLETE, 'مدارک کامل');
+            $this->line("   DOCUMENTS_INCOMPLETE → DOCUMENTS_COMPLETE: OK");
+
+            // DOCUMENTS_COMPLETE → UNDER_REVIEW (valid)
+            $case = $service->changeStatus($case, VisaCaseStatus::UNDER_REVIEW, 'بررسی کارشناس');
+            $this->line("   DOCUMENTS_COMPLETE → UNDER_REVIEW: OK");
+
+            // تلاش برای انتقال غیرمجاز: UNDER_REVIEW → COMPLETED
+            try {
+                $service->changeStatus($case, VisaCaseStatus::COMPLETED);
+                $this->error("   Invalid transition succeeded (WRONG)");
+                $case->forceDelete();
+                return false;
+            } catch (\Throwable $e) {
+                $this->line("   UNDER_REVIEW → COMPLETED (invalid): Correctly rejected");
+            }
+
+            $case->forceDelete();
+            return true;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function testDocumentAttachment(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $docService = app(DocumentService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase($user->id, $visaType->id);
+
+            // ایجاد یک Document با Laravel's fake() method
+            $file = \Illuminate\Http\UploadedFile::fake()->create('passport.pdf', 100);
+
+            $document = $docService->upload(
+                $file,
+                DocumentCategory::PASSPORT,
+                DocumentVisibility::PRIVATE,
+                null,
+                'پاسپورت تست'
+            );
+
+            // اتصال به پرونده
+            $checklistItem = $visaType->checklist()->first();
+            $caseDoc = $service->attachDocument(
+                $case,
+                $document,
+                $checklistItem?->id,
+                null,
+                true,
+                false
+            );
+
+            $case->refresh();
+
+            $this->line("   Document attached: {$caseDoc->id}");
+            $this->line("   Uploaded count: {$case->uploaded_documents_count}");
+            $this->line("   Verification status: {$caseDoc->verification_status}");
+
+            $success = $caseDoc->verification_status === 'pending'
+                && $case->uploaded_documents_count > 0;
+
+            // Cleanup
+            $docService->delete($document);
+            $case->forceDelete();
+
+            return $success;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function testDocumentVerification(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $docService = app(DocumentService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase($user->id, $visaType->id);
+
+            // ایجاد Document با Laravel's fake()
+            $file = \Illuminate\Http\UploadedFile::fake()->image('photo.jpg', 300, 400);
+
+            $document = $docService->upload(
+                $file,
+                DocumentCategory::PHOTO,
+                DocumentVisibility::PRIVATE
+            );
+
+            $checklistItem = $visaType->checklist()->first();
+            $caseDoc = $service->attachDocument($case, $document, $checklistItem?->id);
+
+            // تأیید مدرک
+            $caseDoc = $service->verifyDocument($caseDoc, 'approved', 'مدرک سالم است');
+
+            $case->refresh();
+
+            $this->line("   Verification status: {$caseDoc->verification_status}");
+            $this->line("   Approved count: {$case->approved_documents_count}");
+            $this->line("   Verified by: " . ($caseDoc->verified_by ? 'Yes' : 'No'));
+
+            $success = $caseDoc->verification_status === 'approved'
+                && $case->approved_documents_count > 0;
+
+            // Cleanup
+            $docService->delete($document);
+            $case->forceDelete();
+
+            return $success;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function testChecklistStatus(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase($user->id, $visaType->id);
+
+            $status = $service->getChecklistStatus($case);
+
+            $this->line("   Total items: {$status['summary']['total']}");
+            $this->line("   Required: {$status['summary']['required']}");
+            $this->line("   Completion: {$status['summary']['completion_percentage']}%");
+            $this->line("   First item title: " . ($status['items'][0]['checklist_item']->title ?? 'N/A'));
+
+            $success = $status['summary']['total'] > 0
+                && is_array($status['items']);
+
+            $case->forceDelete();
+            return $success;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function testAddPassenger(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase($user->id, $visaType->id);
+
+            $passenger = $service->addPassenger($case, [
+                'type' => 'adult',
+                'first_name' => 'علی',
+                'last_name' => 'رضایی',
+                'first_name_en' => 'Ali',
+                'last_name_en' => 'Rezaei',
+                'national_id' => '1234567890',
+                'birth_date' => '1990-01-15',
+                'gender' => 'male',
+                'relation_to_owner' => 'self',
+            ]);
+
+            $this->line("   Passenger: {$passenger->full_name}");
+            $this->line("   Is main applicant: " . ($passenger->is_main_applicant ? 'Yes' : 'No'));
+            $this->line("   Age: " . ($passenger->age ?? 'N/A'));
+
+            $success = $passenger->is_main_applicant
+                && $passenger->full_name === 'علی رضایی';
+
+            $case->forceDelete();
+            return $success;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function testAddNote(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase($user->id, $visaType->id);
+
+            $note = $service->addNote(
+                $case,
+                'تست یادداشت: این یک یادداشت عمومی است',
+                'general',
+                'public',
+                auth()->user()
+            );
+
+            $this->line("   Note ID: {$note->id}");
+            $this->line("   Visibility: {$note->visibility}");
+            $this->line("   Author: {$note->author_name}");
+
+            $success = $note->visibility === 'public'
+                && !empty($note->content);
+
+            $case->forceDelete();
+            return $success;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function testTimelineRecords(): bool
+    {
+        try {
+            $service = app(VisaCaseService::class);
+            $visaType = VisaType::first();
+            $user = auth()->user();
+
+            $case = $service->createCase($user->id, $visaType->id);
+
+            // چند عملیات که timeline ایجاد می‌کنند
+            $service->changeStatus($case, VisaCaseStatus::DOCUMENTS_INCOMPLETE, 'تست');
+            $service->addNote($case, 'تست یادداشت', 'general', 'public');
+
+            $timeline = $case->timeline;
+
+            $this->line("   Timeline entries: {$timeline->count()}");
+            $this->line("   First event: {$timeline->first()?->title}");
+
+            $success = $timeline->count() >= 3; // create + status_change + note
+
+            $case->forceDelete();
+            return $success;
+        } catch (\Throwable $e) {
+            $this->error("   Error: " . $e->getMessage());
+            return false;
+        }
+    }
+}

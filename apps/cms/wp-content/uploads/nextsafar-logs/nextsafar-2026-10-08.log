@@ -1,0 +1,8 @@
+[2026-10-08 20:35:33] [info] Booking table created/upgraded | {"table":"ns_ns_bookings","version":"1.0.0"}
+[2026-10-08 20:35:33] [info] Payment table created/upgraded | {"table":"ns_ns_payments","version":"1.0.0"}
+[2026-10-08 20:35:33] [info] Booking passenger table created/upgraded | {"table":"ns_ns_booking_passengers"}
+[2026-10-08 20:35:33] [info] Booking document table created/upgraded | {"table":"ns_ns_booking_documents"}
+[2026-10-08 20:35:33] [info] Default currency rates seeded | {"count":10}
+[2026-10-08 20:35:33] [info] Currency table created/upgraded | {"table":"ns_ns_exchange_rates"}
+[2026-10-08 20:35:33] [info] Default currency rates seeded | {"count":10}
+[2026-10-08 20:35:33] [info] Currency table created/upgraded | {"table":"ns_ns_exchange_rates"}

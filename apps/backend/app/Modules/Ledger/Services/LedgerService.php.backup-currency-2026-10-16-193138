@@ -1,0 +1,474 @@
+<?php
+
+namespace App\Modules\Ledger\Services;
+
+use App\Core\Logging\AppLogger;
+use App\Exceptions\ApiException;
+use App\Core\ApiErrorCode;
+use App\Modules\Ledger\Models\LedgerAccount;
+use App\Modules\Ledger\Models\LedgerEntry;
+use App\Modules\Order\Models\Order;
+use App\Modules\Payment\Models\Payment;
+use Illuminate\Support\Facades\DB;
+use Throwable;
+
+/**
+ * Ledger Service
+ * 
+ * سیستم حسابداری دوطرفه (Double-entry bookkeeping)
+ * 
+ * اصل اساسی: هر تراکنش حداقل دو طرف دارد:
+ * - یک حساب بدهکار (debit)
+ * - یک حساب بستانکار (credit)
+ * - مجموع بدهکار = مجموع بستانکار
+ */
+class LedgerService
+{
+    // =====================================================================
+    // ۱. ثبت تراکنش
+    // =====================================================================
+
+    /**
+     * ثبت تراکنش پرداخت موفق
+     * 
+     * وقتی پرداخت موفق می‌شود:
+     * - موجودی بانک (دارایی) ↑ بدهکار
+     * - درآمد فروش (درآمد) ↑ بستانکار
+     */
+    public function recordPaymentReceived(Payment $payment): LedgerEntry
+    {
+        // تشخیص حساب درآمد بر اساس نوع سفارش
+        $revenueAccount = $this->getRevenueAccountForOrder($payment->order);
+
+        return DB::transaction(function () use ($payment, $revenueAccount) {
+            $entry = LedgerEntry::create([
+                'type' => LedgerEntry::TYPE_PAYMENT_RECEIVED,
+                'order_id' => $payment->order_id,
+                'payment_id' => $payment->id,
+                'account_debit' => LedgerAccount::CODE_GATEWAY_BALANCE, // موجودی نزد درگاه
+                'account_credit' => $revenueAccount->code,
+                'amount' => $payment->verified_amount ?? $payment->amount,
+                'currency' => $payment->currency,
+                'description' => "دریافت پرداخت سفارش " . ($payment->order?->code ?? 'نامشخص'),
+                'reference_type' => 'payment',
+                'reference_code' => $payment->code,
+                'created_by' => $payment->user_id,
+                'transaction_date' => $payment->verified_at ?? now(),
+                'metadata' => [
+                    'gateway' => $payment->gateway->value,
+                    'reference_id' => $payment->reference_id,
+                    'card_pan' => $payment->card_number,
+                ],
+            ]);
+
+            AppLogger::finance()->info('ledger.payment_received', [
+                'entry_code' => $entry->code,
+                'payment_code' => $payment->code,
+                'amount' => $entry->amount,
+                'debit' => $entry->account_debit,
+                'credit' => $entry->account_credit,
+            ]);
+
+            return $entry;
+        });
+    }
+
+    /**
+     * ثبت استرداد
+     * 
+     * وقتی استرداد می‌شود:
+     * - درآمد فروش (درآمد) ↓ بدهکار (معکوس)
+     * - موجودی بانک (دارایی) ↓ بستانکار (معکوس)
+     */
+    public function recordRefund($refund): LedgerEntry
+    {
+        return DB::transaction(function () use ($refund) {
+            $revenueAccount = $this->getRevenueAccountForOrder($refund->order);
+
+            $entry = LedgerEntry::create([
+                'type' => LedgerEntry::TYPE_REFUND_ISSUED,
+                'order_id' => $refund->order_id,
+                'refund_id' => $refund->id,
+                'account_debit' => $revenueAccount->code, // درآمد را کاهش می‌دهد
+                'account_credit' => LedgerAccount::CODE_GATEWAY_BALANCE, // موجودی را کاهش می‌دهد
+                'amount' => $refund->amount,
+                'currency' => $refund->currency ?? 'IRR',
+                'description' => "استرداد سفارش " . ($refund->order?->code ?? 'نامششخص'),
+                'reference_type' => 'refund',
+                'reference_code' => $refund->code ?? (string) $refund->id,
+                'created_by' => auth()->id(),
+                'transaction_date' => now(),
+            ]);
+
+            AppLogger::finance()->info('ledger.refund_recorded', [
+                'entry_code' => $entry->code,
+                'refund_id' => $refund->id,
+                'amount' => $entry->amount,
+            ]);
+
+            return $entry;
+        });
+    }
+
+    /**
+     * ثبت تراکنش دستی (برای تعدیل)
+     */
+    public function recordManualEntry(array $data): LedgerEntry
+    {
+        $this->validateEntryData($data);
+
+        return DB::transaction(function () use ($data) {
+            $entry = LedgerEntry::create(array_merge($data, [
+                'type' => $data['type'] ?? LedgerEntry::TYPE_MANUAL,
+                'created_by' => auth()->id(),
+                'transaction_date' => $data['transaction_date'] ?? now(),
+            ]));
+
+            AppLogger::finance()->warning('ledger.manual_entry', [
+                'entry_code' => $entry->code,
+                'created_by' => auth()->id(),
+                'amount' => $entry->amount,
+            ]);
+
+            return $entry;
+        });
+    }
+
+    /**
+     * برگشت تراکنش (Reversal)
+     */
+    public function reverseEntry(LedgerEntry $originalEntry, ?string $reason = null): LedgerEntry
+    {
+        if ($originalEntry->is_reversed) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'این تراکنش قبلاً برگشت شده است.',
+                httpStatus: 422,
+            );
+        }
+
+        return DB::transaction(function () use ($originalEntry, $reason) {
+            // ایجاد تراکنش معکوس
+            $reversal = LedgerEntry::create([
+                'type' => LedgerEntry::TYPE_REVERSAL,
+                'order_id' => $originalEntry->order_id,
+                'payment_id' => $originalEntry->payment_id,
+                'account_debit' => $originalEntry->account_credit, // جابجایی
+                'account_credit' => $originalEntry->account_debit, // جابجایی
+                'amount' => $originalEntry->amount,
+                'currency' => $originalEntry->currency,
+                'exchange_rate' => $originalEntry->exchange_rate,
+                'description' => "برگشت تراکنش {$originalEntry->code}" . ($reason ? " - {$reason}" : ''),
+                'reference_type' => 'reversal',
+                'reference_code' => $originalEntry->code,
+                'created_by' => auth()->id(),
+                'transaction_date' => now(),
+                'metadata' => [
+                    'original_entry_code' => $originalEntry->code,
+                    'reason' => $reason,
+                ],
+            ]);
+
+            // علامت‌گذاری تراکنش اصلی
+            $originalEntry->update([
+                'is_reversed' => true,
+                'reversed_by_entry' => $reversal->id,
+            ]);
+
+            AppLogger::finance()->warning('ledger.entry_reversed', [
+                'original_code' => $originalEntry->code,
+                'reversal_code' => $reversal->code,
+                'reversed_by' => auth()->id(),
+                'reason' => $reason,
+            ]);
+
+            return $reversal;
+        });
+    }
+
+    // =====================================================================
+    // ۲. گزارش‌ها و Query ها
+    // =====================================================================
+
+    /**
+     * تراز آزمایشی (Trial Balance)
+     * 
+     * مجموع مانده همه حساب‌ها
+     * باید: مجموع بدهکار = مجموع بستانکار
+     */
+    public function getTrialBalance(?string $fromDate = null, ?string $toDate = null): array
+    {
+        $accounts = LedgerAccount::active()->orderBy('code')->get();
+        $result = [];
+        $totalDebit = 0;
+        $totalCredit = 0;
+
+        foreach ($accounts as $account) {
+            $balance = $account->getBalance($fromDate, $toDate);
+            if ($balance != 0) {
+                $result[] = [
+                    'code' => $account->code,
+                    'name' => $account->name,
+                    'type' => $account->type,
+                    'type_label' => $account->type_label,
+                    'balance' => abs($balance),
+                    'balance_side' => $balance > 0 
+                        ? ($account->hasDebitNormalBalance() ? 'debit' : 'credit')
+                        : ($account->hasDebitNormalBalance() ? 'credit' : 'debit'),
+                ];
+
+                if ($balance > 0 && $account->hasDebitNormalBalance()) {
+                    $totalDebit += $balance;
+                } elseif ($balance < 0 && !$account->hasDebitNormalBalance()) {
+                    $totalDebit += abs($balance);
+                } elseif ($balance > 0 && !$account->hasDebitNormalBalance()) {
+                    $totalCredit += $balance;
+                } elseif ($balance < 0 && $account->hasDebitNormalBalance()) {
+                    $totalCredit += abs($balance);
+                }
+            }
+        }
+
+        return [
+            'accounts' => $result,
+            'total_debit' => $totalDebit,
+            'total_credit' => $totalCredit,
+            'is_balanced' => abs($totalDebit - $totalCredit) < 1,
+            'difference' => $totalDebit - $totalCredit,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ];
+    }
+
+    /**
+     * صورت سود و زیان (Income Statement)
+     */
+    public function getIncomeStatement(?string $fromDate = null, ?string $toDate = null): array
+    {
+        $revenues = LedgerAccount::active()->revenues()->get();
+        $expenses = LedgerAccount::active()->expenses()->get();
+
+        $totalRevenue = 0;
+        $totalExpense = 0;
+        $revenueDetails = [];
+        $expenseDetails = [];
+
+        foreach ($revenues as $revenue) {
+            $balance = $revenue->getBalance($fromDate, $toDate);
+            if ($balance != 0) {
+                $revenueDetails[] = [
+                    'code' => $revenue->code,
+                    'name' => $revenue->name,
+                    'amount' => $balance,
+                ];
+                $totalRevenue += $balance;
+            }
+        }
+
+        foreach ($expenses as $expense) {
+            $balance = $expense->getBalance($fromDate, $toDate);
+            if ($balance != 0) {
+                $expenseDetails[] = [
+                    'code' => $expense->code,
+                    'name' => $expense->name,
+                    'amount' => $balance,
+                ];
+                $totalExpense += $balance;
+            }
+        }
+
+        $netIncome = $totalRevenue - $totalExpense;
+
+        return [
+            'revenues' => $revenueDetails,
+            'total_revenue' => $totalRevenue,
+            'expenses' => $expenseDetails,
+            'total_expense' => $totalExpense,
+            'net_income' => $netIncome,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ];
+    }
+
+    /**
+     * صورت وضعیت مالی (Balance Sheet)
+     */
+    public function getBalanceSheet(?string $asOfDate = null): array
+    {
+        $assets = LedgerAccount::active()->assets()->get();
+        $liabilities = LedgerAccount::active()->liabilities()->get();
+        $equities = LedgerAccount::active()->ofType('equity')->get();
+
+        $totalAssets = 0;
+        $totalLiabilities = 0;
+        $totalEquity = 0;
+
+        $assetDetails = [];
+        $liabilityDetails = [];
+        $equityDetails = [];
+
+        foreach ($assets as $asset) {
+            $balance = $asset->getBalance(null, $asOfDate);
+            if ($balance != 0) {
+                $assetDetails[] = ['code' => $asset->code, 'name' => $asset->name, 'amount' => $balance];
+                $totalAssets += $balance;
+            }
+        }
+
+        foreach ($liabilities as $liability) {
+            $balance = $liability->getBalance(null, $asOfDate);
+            if ($balance != 0) {
+                $liabilityDetails[] = ['code' => $liability->code, 'name' => $liability->name, 'amount' => $balance];
+                $totalLiabilities += $balance;
+            }
+        }
+
+        foreach ($equities as $equity) {
+            $balance = $equity->getBalance(null, $asOfDate);
+            if ($balance != 0) {
+                $equityDetails[] = ['code' => $equity->code, 'name' => $equity->name, 'amount' => $balance];
+                $totalEquity += $balance;
+            }
+        }
+
+        return [
+            'assets' => $assetDetails,
+            'total_assets' => $totalAssets,
+            'liabilities' => $liabilityDetails,
+            'total_liabilities' => $totalLiabilities,
+            'equity' => $equityDetails,
+            'total_equity' => $totalEquity,
+            'liabilities_plus_equity' => $totalLiabilities + $totalEquity,
+            'is_balanced' => abs($totalAssets - ($totalLiabilities + $totalEquity)) < 1,
+            'as_of_date' => $asOfDate,
+        ];
+    }
+
+    /**
+     * گردش حساب (برای یک حساب خاص)
+     */
+    public function getAccountStatement(string $accountCode, ?string $fromDate = null, ?string $toDate = null): array
+    {
+        $account = LedgerAccount::findByCode($accountCode);
+        if (!$account) {
+            throw ApiException::notFound('حساب', $accountCode);
+        }
+
+        $entries = LedgerEntry::query()
+            ->notReversed()
+            ->where(function ($q) use ($accountCode) {
+                $q->where('account_debit', $accountCode)
+                    ->orWhere('account_credit', $accountCode);
+            })
+            ->when($fromDate, fn($q) => $q->where('transaction_date', '>=', $fromDate))
+            ->when($toDate, fn($q) => $q->where('transaction_date', '<=', $toDate))
+            ->orderBy('transaction_date')
+            ->orderBy('id')
+            ->get();
+
+        $runningBalance = 0;
+        $rows = [];
+
+        foreach ($entries as $entry) {
+            $debit = 0;
+            $credit = 0;
+
+            if ($entry->account_debit === $accountCode) {
+                $debit = $entry->amount;
+            }
+            if ($entry->account_credit === $accountCode) {
+                $credit = $entry->amount;
+            }
+
+            // محاسبه تغییر مانده بر اساس نوع حساب
+            if ($account->hasDebitNormalBalance()) {
+                $runningBalance += ($debit - $credit);
+            } else {
+                $runningBalance += ($credit - $debit);
+            }
+
+            $rows[] = [
+                'date' => $entry->transaction_date->format('Y-m-d H:i'),
+                'code' => $entry->code,
+                'description' => $entry->description,
+                'type' => $entry->type_label,
+                'debit' => $debit,
+                'credit' => $credit,
+                'balance' => $runningBalance,
+            ];
+        }
+
+        return [
+            'account' => $account,
+            'entries' => $rows,
+            'opening_balance' => 0, // TODO: محاسبه مانده قبل از fromDate
+            'closing_balance' => $runningBalance,
+            'from_date' => $fromDate,
+            'to_date' => $toDate,
+        ];
+    }
+
+    // =====================================================================
+    // ۳. Private Helpers
+    // =====================================================================
+
+    /**
+     * تشخیص حساب درآمد بر اساس نوع سفارش
+     */
+    private function getRevenueAccountForOrder(?Order $order): LedgerAccount
+    {
+        if (!$order) {
+            return LedgerAccount::findByCode(LedgerAccount::CODE_TOUR_REVENUE);
+        }
+
+        $code = match ($order->type) {
+            Order::TYPE_TOUR => LedgerAccount::CODE_TOUR_REVENUE,
+            Order::TYPE_HOTEL => LedgerAccount::CODE_HOTEL_REVENUE,
+            Order::TYPE_VISA => LedgerAccount::CODE_VISA_REVENUE,
+            default => LedgerAccount::CODE_TOUR_REVENUE,
+        };
+
+        return LedgerAccount::findByCode($code);
+    }
+
+    /**
+     * اعتبارسنجی داده‌های ورودی تراکنش
+     */
+    private function validateEntryData(array $data): void
+    {
+        if (empty($data['account_debit'])) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'حساب بدهکار الزامی است.',
+                httpStatus: 422,
+            );
+        }
+
+        if (empty($data['account_credit'])) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'حساب بستانکار الزامی است.',
+                httpStatus: 422,
+            );
+        }
+
+        if (empty($data['amount']) || $data['amount'] <= 0) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'مبلغ باید بیشتر از صفر باشد.',
+                httpStatus: 422,
+            );
+        }
+
+        // بررسی وجود حساب‌ها
+        $debitAccount = LedgerAccount::findByCode($data['account_debit']);
+        $creditAccount = LedgerAccount::findByCode($data['account_credit']);
+
+        if (!$debitAccount) {
+            throw ApiException::notFound('حساب بدهکار', $data['account_debit']);
+        }
+        if (!$creditAccount) {
+            throw ApiException::notFound('حساب بستانکار', $data['account_credit']);
+        }
+    }
+}

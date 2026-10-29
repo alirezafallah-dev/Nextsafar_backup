@@ -1,0 +1,382 @@
+<?php
+
+namespace App\Filament\Admin\Resources;
+
+use App\Filament\Admin\Resources\HotelResource\Pages;
+use App\Models\Hotel;
+use Filament\Actions\Action;
+use Filament\Actions\BulkActionGroup;
+use Filament\Actions\DeleteBulkAction;
+use Filament\Actions\EditAction;
+use Filament\Actions\ViewAction;
+use Filament\Forms\Components\DatePicker;
+use Filament\Forms\Components\FileUpload;
+use Filament\Forms\Components\Grid;
+use Filament\Forms\Components\KeyValue;
+use Filament\Forms\Components\Placeholder;
+use Filament\Forms\Components\RichEditor;
+use Filament\Forms\Components\Section;
+use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Tabs;
+use Filament\Forms\Components\Tabs\Tab;
+use Filament\Forms\Components\TagsInput;
+use Filament\Forms\Components\Textarea;
+use Filament\Forms\Components\TextInput;
+use Filament\Forms\Components\Toggle;
+use Filament\Resources\Resource;
+use Filament\Schemas\Schema;
+use Filament\Tables\Actions\BulkAction;
+use Filament\Tables\Columns\IconColumn;
+use Filament\Tables\Columns\ImageColumn;
+use Filament\Tables\Columns\TextColumn;
+use Filament\Tables\Filters\Filter;
+use Filament\Tables\Filters\SelectFilter;
+use Filament\Tables\Filters\TernaryFilter;
+use Filament\Tables\Table;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+
+class HotelResource extends Resource
+{
+    protected static ?string $model = Hotel::class;
+
+    protected static \BackedEnum|string|null $navigationIcon = 'heroicon-o-building-office-2';
+    protected static ?string $navigationLabel = 'هتل‌ها';
+    protected static \UnitEnum|string|null $navigationGroup = 'مدیریت محصولات';
+    protected static ?int $navigationSort = 2;
+    protected static ?string $modelLabel = 'هتل';
+    protected static ?string $pluralModelLabel = 'هتل‌ها';
+    protected static ?string $slug = 'hotels';
+    protected static ?string $recordTitleAttribute = 'name';
+
+    public static function form(Schema $schema): Schema
+    {
+        return $schema->schema([
+            Tabs::make('Hotel Tabs')->tabs([
+                Tab::make('اطلاعات اصلی')->icon('heroicon-o-building-office-2')->schema([
+                    Section::make('شناسه و نام')->schema([
+                        TextInput::make('name')->label('نام هتل')->required()->maxLength(255)->columnSpan(2),
+                        TextInput::make('slug')->label('اسلاگ')->unique(ignoreRecord: true)->maxLength(255)->disabled(fn ($record) => $record && $record->content_source === 'wordpress'),
+                        TextInput::make('wp_post_id')->label('شناسه پست وردپرس')->disabled()->helperText('به صورت خودکار از وردپرس sync می‌شود'),
+                        Select::make('content_source')->label('منبع محتوا')->options(self::getContentSourceOptions())->default('manual')->disabled(fn ($record) => $record && $record->content_source === 'wordpress'),
+                    ])->columns(2),
+
+                    Section::make('موقعیت جغرافیایی')->schema([
+                        TextInput::make('city')->label('شهر')->maxLength(100),
+                        TextInput::make('country')->label('کشور')->maxLength(100),
+                        TextInput::make('address')->label('آدرس')->columnSpanFull()->maxLength(500),
+                        TextInput::make('latitude')->label('عرض جغرافیایی')->numeric()->step('any')->placeholder('35.6892'),
+                        TextInput::make('longitude')->label('طول جغرافیایی')->numeric()->step('any')->placeholder('51.3890'),
+                    ])->columns(2),
+
+                    Section::make('وضعیت')->schema([
+                        Select::make('publish_status')->label('وضعیت انتشار')->options(self::getPublishStatusOptions())->required()->default('draft'),
+                        Select::make('display_status')->label('وضعیت نمایش')->options(self::getDisplayStatusOptions())->default('visible'),
+                        Select::make('sync_status')->label('وضعیت sync')->options(self::getSyncStatusOptions())->disabled(),
+                    ])->columns(3),
+                ]),
+
+                Tab::make('محتوا')->icon('heroicon-o-document-text')->schema([
+                    Section::make('توضیحات')->schema([
+                        Textarea::make('short_description')->label('توضیحات کوتاه')->rows(3)->maxLength(500)->columnSpanFull(),
+                        RichEditor::make('full_description')->label('توضیحات کامل')->columnSpanFull()->toolbarButtons([
+                            'bold', 'italic', 'underline', 'strike', 'link',
+                            'h2', 'h3', 'blockquote', 'codeBlock',
+                            'orderedList', 'bulletList', 'attachFiles', 'undo', 'redo',
+                        ]),
+                    ]),
+
+                    Section::make('سوالات متداول (FAQ)')->schema([
+                        RichEditor::make('faq')->label('سوالات متداول')->columnSpanFull(),
+                    ]),
+
+                    Section::make('برچسب‌ها و دسته‌بندی‌ها')->schema([
+                        TagsInput::make('tags')->label('برچسب‌ها')->separator(','),
+                        TagsInput::make('categories')->label('دسته‌بندی‌ها')->separator(','),
+                    ])->columns(2),
+
+                    Section::make('امکانات هتل')->schema([
+                        KeyValue::make('facilities')->label('امکانات')
+                            ->keyLabel('عنوان')
+                            ->valueLabel('توضیحات')
+                            ->addActionLabel('افزودن امکان')
+                            ->reorderable(),
+                    ]),
+                ]),
+
+                Tab::make('رسانه')->icon('heroicon-o-photo')->schema([
+                    Section::make('تصاویر')->schema([
+                        TextInput::make('featured_image_url')->label('URL تصویر شاخص')->url()->columnSpanFull()
+                            ->helperText('از وردپرس sync می‌شود یا به صورت دستی وارد کنید'),
+                        Textarea::make('gallery_images')->label('گالری تصاویر (JSON)')->rows(5)->columnSpanFull()
+                            ->helperText('آرایه JSON از URL های تصاویر'),
+                    ]),
+                ]),
+
+                Tab::make('امتیاز و نظرات')->icon('heroicon-o-star')->schema([
+                    Section::make('امتیازات')->schema([
+                        TextInput::make('rating')->label('امتیاز (0-5)')->numeric()->minValue(0)->maxValue(5)->step(0.1)->default(0),
+                        TextInput::make('review_count')->label('تعداد نظرات')->numeric()->minValue(0)->default(0),
+                    ])->columns(2),
+                ]),
+
+                Tab::make('SEO')->icon('heroicon-o-magnifying-glass')->schema([
+                    Section::make('متادیتای سئو')->schema([
+                        TextInput::make('seo_title')->label('عنوان سئو')->maxLength(70)->columnSpanFull(),
+                        Textarea::make('seo_description')->label('توضیحات سئو')->rows(3)->maxLength(160)->columnSpanFull(),
+                        TextInput::make('seo_keyword')->label('کلمه کلیدی سئو')->columnSpanFull(),
+                        TextInput::make('seo_image_url')->label('URL تصویر سئو')->url()->columnSpanFull(),
+                        TextInput::make('canonical_url')->label('Canonical URL')->url()->columnSpanFull(),
+                    ]),
+                ]),
+
+                Tab::make('WordPress Sync')->icon('heroicon-o-arrow-path')->schema([
+                    Section::make('اطلاعات همگام‌سازی')->schema([
+                        Placeholder::make('wp_post_id_display')->label('شناسه پست وردپرس')
+                            ->content(fn ($record) => $record?->wp_post_id ? "📝 {$record->wp_post_id}" : '— (ساخته شده در لاراول)'),
+                        Placeholder::make('wp_post_type')->label('نوع پست وردپرس')
+                            ->content(fn ($record) => $record?->wp_post_type ?? '—'),
+                        Placeholder::make('wp_last_synced_at')->label('آخرین sync')
+                            ->content(fn ($record) => $record?->wp_last_synced_at?->format('Y/m/d H:i:s') ?? '— (sync نشده)'),
+                        Placeholder::make('wp_content_version')->label('نسخه محتوا')
+                            ->content(fn ($record) => $record?->wp_content_version ?? '—'),
+                        Placeholder::make('content_source')->label('منبع محتوا')
+                            ->content(fn ($record) => self::getContentSourceOptions()[$record?->content_source ?? 'manual'] ?? 'دستی'),
+                    ])->columns(2),
+
+                    Section::make('تنظیمات Sync')->schema([
+                        TextInput::make('metadata')->label('Metadata (JSON)')->disabled()
+                            ->helperText('متادیتای اضافی از وردپرس')
+                            ->columnSpanFull(),
+                    ]),
+                ]),
+
+                Tab::make('تنظیمات')->icon('heroicon-o-cog-6-tooth')->schema([
+                    Section::make('تاریخ‌های سیستمی')->schema([
+                        DatePicker::make('published_at')->label('تاریخ انتشار')->native(false)->displayFormat('Y/m/d H:i'),
+                        Placeholder::make('created_at')->label('ایجاد')->content(fn ($record) => $record?->created_at?->format('Y/m/d H:i') ?? '—'),
+                        Placeholder::make('updated_at')->label('بروزرسانی')->content(fn ($record) => $record?->updated_at?->format('Y/m/d H:i') ?? '—'),
+                        Placeholder::make('deleted_at')->label('حذف')->content(fn ($record) => $record?->deleted_at?->format('Y/m/d H:i') ?? '—'),
+                    ])->columns(2),
+                ]),
+            ])->columnSpanFull(),
+        ]);
+    }
+
+    public static function table(Table $table): Table
+    {
+        return $table
+            ->columns([
+                ImageColumn::make('featured_image_url')->label('تصویر')->circular()->size(40)
+                    ->defaultImageUrl(fn ($record) => 'https://ui-avatars.com/api/?name=' . urlencode($record->name ?? 'H') . '&background=3b82f6&color=fff'),
+                TextColumn::make('name')->label('نام هتل')->searchable()->sortable()->limit(30)->weight('bold'),
+                TextColumn::make('city')->label('شهر')->searchable()->sortable()->badge()->color('info'),
+                TextColumn::make('country')->label('کشور')->searchable()->sortable()->badge()->color('primary'),
+                TextColumn::make('rating')->label('امتیاز')->badge()
+                    ->formatStateUsing(fn ($state) => $state ? '⭐ ' . $state : '—')
+                    ->color('warning')
+                    ->sortable(),
+                TextColumn::make('content_source')->label('منبع')->badge()
+                    ->formatStateUsing(fn ($s) => self::getContentSourceOptions()[$s] ?? $s)
+                    ->color(fn ($s) => match ($s) {
+                        'wordpress' => 'info',
+                        'manual' => 'gray',
+                        'provider' => 'success',
+                        'hybrid' => 'warning',
+                        default => 'gray',
+                    }),
+                TextColumn::make('publish_status')->label('وضعیت انتشار')->badge()
+                    ->formatStateUsing(fn ($s) => self::getPublishStatusOptions()[$s] ?? $s)
+                    ->color(fn ($s) => self::getPublishStatusColor($s))
+                    ->sortable(),
+                TextColumn::make('sync_status')->label('Sync')->badge()
+                    ->formatStateUsing(fn ($s) => self::getSyncStatusOptions()[$s] ?? $s)
+                    ->color(fn ($s) => self::getSyncStatusColor($s))
+                    ->sortable(),
+                TextColumn::make('wp_last_synced_at')->label('آخرین sync')
+                    ->dateTime('Y/m/d H:i')
+                    ->sortable()
+                    ->placeholder('—')
+                    ->toggleable(),
+                TextColumn::make('wp_post_id')->label('WP ID')->badge()->color('info')->placeholder('—')->toggleable(isToggledHiddenByDefault: true),
+                TextColumn::make('created_at')->label('ایجاد')->dateTime('Y/m/d')->sortable()->toggleable(isToggledHiddenByDefault: true),
+            ])
+            ->filters([
+                SelectFilter::make('publish_status')->label('وضعیت انتشار')->options(self::getPublishStatusOptions()),
+                SelectFilter::make('sync_status')->label('وضعیت sync')->options(self::getSyncStatusOptions()),
+                SelectFilter::make('content_source')->label('منبع محتوا')->options(self::getContentSourceOptions()),
+                SelectFilter::make('display_status')->label('وضعیت نمایش')->options(self::getDisplayStatusOptions()),
+                Filter::make('from_wordpress')->label('فقط از وردپرس')
+                    ->query(fn (Builder $q) => $q->where('content_source', 'wordpress')),
+                Filter::make('needs_sync')->label('نیازمند sync')
+                    ->query(fn (Builder $q) => $q->whereIn('sync_status', ['pending', 'error', 'needs_update'])),
+                Filter::make('rating_range')->label('بازه امتیاز')->form([
+                    TextInput::make('min_rating')->label('حداقل امتیاز')->numeric()->minValue(0)->maxValue(5),
+                    TextInput::make('max_rating')->label('حداکثر امتیاز')->numeric()->minValue(0)->maxValue(5),
+                ])->query(function (Builder $query, array $data): Builder {
+                    return $query
+                        ->when($data['min_rating'] ?? null, fn (Builder $q, $v) => $q->where('rating', '>=', $v))
+                        ->when($data['max_rating'] ?? null, fn (Builder $q, $v) => $q->where('rating', '<=', $v));
+                }),
+            ])
+            ->actions([
+                ViewAction::make(),
+                EditAction::make(),
+                Action::make('sync_from_wp')
+                    ->label('Sync از وردپرس')
+                    ->icon('heroicon-o-arrow-path')
+                    ->color('info')
+                    ->requiresConfirmation()
+                    ->modalHeading('همگام‌سازی از وردپرس')
+                    ->modalDescription('آیا مطمئن هستید که می‌خواهید این هتل را از وردپرس همگام‌سازی کنید؟')
+                    ->action(function ($record) {
+                        // TODO: Implement actual sync logic
+                        $record->update([
+                            'sync_status' => 'pending',
+                        ]);
+                        
+                        \Filament\Notifications\Notification::make()
+                            ->title('درخواست sync ثبت شد')
+                            ->body('هتل ' . $record->name . ' در صف همگام‌سازی قرار گرفت')
+                            ->info()
+                            ->send();
+                    })
+                    ->visible(fn ($record) => $record->wp_post_id && $record->content_source === 'wordpress'),
+                Action::make('view_in_wp')
+                    ->label('مشاهده در وردپرس')
+                    ->icon('heroicon-o-arrow-top-right-on-square')
+                    ->color('gray')
+                    ->url(fn ($record) => $record->wp_post_id ? config('services.wordpress.url') . "/wp-admin/post.php?post={$record->wp_post_id}&action=edit" : '#', true)
+                    ->visible(fn ($record) => $record->wp_post_id && $record->content_source === 'wordpress'),
+                Action::make('publish')
+                    ->label('انتشار')
+                    ->icon('heroicon-o-check-circle')
+                    ->color('success')
+                    ->requiresConfirmation()
+                    ->action(fn ($record) => $record->update(['publish_status' => 'published', 'published_at' => now()]))
+                    ->visible(fn ($record) => $record->publish_status !== 'published'),
+                Action::make('unpublish')
+                    ->label('عدم انتشار')
+                    ->icon('heroicon-o-x-circle')
+                    ->color('warning')
+                    ->requiresConfirmation()
+                    ->action(fn ($record) => $record->update(['publish_status' => 'draft']))
+                    ->visible(fn ($record) => $record->publish_status === 'published'),
+            ])
+            ->bulkActions([
+                BulkActionGroup::make([
+                    BulkAction::make('publish')
+                        ->label('انتشار گروهی')
+                        ->icon('heroicon-o-check-circle')
+                        ->color('success')
+                        ->requiresConfirmation()
+                        ->action(fn (Collection $records) => $records->each->update(['publish_status' => 'published', 'published_at' => now()])),
+                    BulkAction::make('unpublish')
+                        ->label('عدم انتشار گروهی')
+                        ->icon('heroicon-o-x-circle')
+                        ->color('warning')
+                        ->requiresConfirmation()
+                        ->action(fn (Collection $records) => $records->each->update(['publish_status' => 'draft'])),
+                    DeleteBulkAction::make(),
+                ]),
+            ])
+            ->defaultSort('created_at', 'desc')
+            ->striped()
+            ->persistFiltersInSession();
+    }
+
+    public static function getRelations(): array
+    {
+        return [
+            // در آینده: HotelRoomsRelationManager, HotelFacilitiesRelationManager
+        ];
+    }
+
+    public static function getPages(): array
+    {
+        return [
+            'index' => Pages\ListHotels::route('/'),
+            'create' => Pages\CreateHotel::route('/create'),
+            'view' => Pages\ViewHotel::route('/{record}'),
+            'edit' => Pages\EditHotel::route('/{record}/edit'),
+        ];
+    }
+
+    public static function getNavigationBadge(): ?string
+    {
+        $published = static::getModel()::where('publish_status', 'published')->count();
+        return $published > 0 ? (string) $published : null;
+    }
+
+    public static function getNavigationBadgeColor(): string|array|null
+    {
+        return 'success';
+    }
+
+    protected static function getPublishStatusOptions(): array
+    {
+        return [
+            'draft' => '📝 پیش‌نویس',
+            'published' => '🌐 منتشر شده',
+            'inactive' => '⏸️ غیرفعال',
+            'pending_review' => '🔍 در انتظار بررسی',
+            'deleted_from_wp' => '🗑️ حذف شده از وردپرس',
+            'needs_update' => '🔄 نیازمند بروزرسانی',
+        ];
+    }
+
+    protected static function getPublishStatusColor(string $status): string
+    {
+        return match ($status) {
+            'draft' => 'gray',
+            'published' => 'success',
+            'inactive' => 'danger',
+            'pending_review' => 'warning',
+            'deleted_from_wp' => 'danger',
+            'needs_update' => 'warning',
+            default => 'gray',
+        };
+    }
+
+    protected static function getDisplayStatusOptions(): array
+    {
+        return [
+            'visible' => '✓ قابل نمایش',
+            'hidden' => '👁️ مخفی',
+            'featured' => '⭐ ویژه',
+        ];
+    }
+
+    protected static function getSyncStatusOptions(): array
+    {
+        return [
+            'synced' => '✓ sync شده',
+            'pending' => '⏳ در انتظار',
+            'error' => '❌ خطا',
+            'needs_update' => '🔄 نیازمند بروزرسانی',
+            'never_synced' => '⭕ sync نشده',
+        ];
+    }
+
+    protected static function getSyncStatusColor(string $status): string
+    {
+        return match ($status) {
+            'synced' => 'success',
+            'pending' => 'info',
+            'error' => 'danger',
+            'needs_update' => 'warning',
+            'never_synced' => 'gray',
+            default => 'gray',
+        };
+    }
+
+    protected static function getContentSourceOptions(): array
+    {
+        return [
+            'wordpress' => '📝 وردپرس',
+            'manual' => '✍️ دستی',
+            'provider' => '🔌 پروایدر',
+            'hybrid' => '🔄 ترکیبی',
+        ];
+    }
+}

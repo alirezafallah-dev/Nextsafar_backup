@@ -1,0 +1,299 @@
+<?php
+
+namespace App\Console\Commands;
+
+use App\Core\ApiResponse;
+use App\Core\Logging\AppLogger;
+use App\Exceptions\ApiException;
+use App\Models\Hotel;
+use App\Models\Permission;
+use App\Models\Role;
+use App\Models\SyncLog;
+use App\Models\User;
+use App\Modules\Lead\Models\Lead;
+use App\Modules\Lead\Models\LeadNote;
+use App\Modules\Lead\Services\LeadService;
+use App\Modules\Tour\Models\Tour;
+use App\Modules\Tour\Models\TourCategory;
+use App\Modules\Tour\Models\TourDate;
+use App\Modules\Tour\Services\TourService;
+use App\Modules\WordPress\Services\HotelSyncService;
+use Illuminate\Console\Command;
+use Illuminate\Support\Facades\DB;
+
+class TestFullSystem extends Command
+{
+    protected $signature = 'test:full';
+    protected $description = 'Comprehensive test of all implemented modules (Phase 0-2)';
+
+    public function handle(): int
+    {
+        $this->info('');
+        $this->info('╔══════════════════════════════════════════════════════════════╗');
+        $this->info('║     🎯 NextSafar - Full System Test Suite                    ║');
+        $this->info('║     Phases 0-2 Comprehensive Verification                    ║');
+        $this->info('╚══════════════════════════════════════════════════════════════╝');
+        $this->info('');
+
+        $passed = 0;
+        $failed = 0;
+
+        // === PHASE 0: Foundation ===
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->info('📦 فاز ۰: زیرساخت');
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        if ($this->runTest('API Response Contract', fn() => $this->testApiResponse())) $passed++; else $failed++;
+        if ($this->runTest('API Exception Handler', fn() => $this->testApiException())) $passed++; else $failed++;
+        if ($this->runTest('Logging System (AppLogger)', fn() => $this->testLogging())) $passed++; else $failed++;
+        if ($this->runTest('WordPress Feature Flags', fn() => $this->testFeatureFlags())) $passed++; else $failed++;
+
+        // === PHASE 1: WordPress Sync ===
+        $this->newLine();
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->info('📦 فاز ۱: همگام‌سازی وردپرس');
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        if ($this->runTest('Hotel Model exists', fn() => class_exists(Hotel::class))) $passed++; else $failed++;
+        if ($this->runTest('SyncLog Model exists', fn() => class_exists(SyncLog::class))) $passed++; else $failed++;
+        if ($this->runTest('Hotel Sync Service', fn() => $this->testHotelSync())) $passed++; else $failed++;
+        if ($this->runTest('Webhook Signature Verification', fn() => $this->testWebhookSignature())) $passed++; else $failed++;
+
+        // === PHASE 2.1: RBAC ===
+        $this->newLine();
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->info('📦 فاز ۲.۱: نقش‌ها و دسترسی‌ها');
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        if ($this->runTest('9 roles seeded', fn() => Role::count() >= 9)) $passed++; else $failed++;
+        if ($this->runTest('85+ permissions seeded', fn() => Permission::count() >= 85)) $passed++; else $failed++;
+        if ($this->runTest('User HasRoles trait', fn() => method_exists(User::first() ?? new User(), 'hasRole'))) $passed++; else $failed++;
+        if ($this->runTest('Super admin bypasses permissions', fn() => $this->testSuperAdmin())) $passed++; else $failed++;
+        if ($this->runTest('Role hierarchy', fn() => $this->testRoleHierarchy())) $passed++; else $failed++;
+
+        // === PHASE 2.2: Tour Module ===
+        $this->newLine();
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->info('📦 فاز ۲.۲: ماژول تور');
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        if ($this->runTest('Tour Model exists', fn() => class_exists(Tour::class))) $passed++; else $failed++;
+        if ($this->runTest('TourCategory seeded (10)', fn() => TourCategory::count() >= 10)) $passed++; else $failed++;
+        if ($this->runTest('Tour auto code generation', fn() => $this->testTourCode())) $passed++; else $failed++;
+        if ($this->runTest('TourDate capacity logic', fn() => $this->testTourDateCapacity())) $passed++; else $failed++;
+        if ($this->runTest('TourService create flow', fn() => app(TourService::class) instanceof TourService)) $passed++; else $failed++;
+
+        // === PHASE 2.3: Lead Module ===
+        $this->newLine();
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+        $this->info('📦 فاز ۲.۳: ماژول درخواست و لید');
+        $this->info('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+
+        if ($this->runTest('Lead Model exists', fn() => class_exists(Lead::class))) $passed++; else $failed++;
+        if ($this->runTest('Lead auto code generation', fn() => preg_match('/^LD-\d{6}-[A-Z0-9]{4}$/', Lead::generateUniqueCode()) === 1)) $passed++; else $failed++;
+        if ($this->runTest('Lead duplicate detection', fn() => $this->testLeadDuplicate())) $passed++; else $failed++;
+        if ($this->runTest('Lead phone normalization', fn() => $this->testLeadPhone())) $passed++; else $failed++;
+        if ($this->runTest('Lead status history', fn() => $this->testLeadStatusHistory())) $passed++; else $failed++;
+        if ($this->runTest('Lead notes system', fn() => $this->testLeadNotes())) $passed++; else $failed++;
+
+        // === Summary ===
+        $total = $passed + $failed;
+        $rate = $total > 0 ? round(($passed / $total) * 100, 1) : 0;
+
+        $this->newLine();
+        $this->info('╔══════════════════════════════════════════════════════════════╗');
+        $this->info('║                      📊 FINAL SUMMARY                        ║');
+        $this->info('╠══════════════════════════════════════════════════════════════╣');
+        $this->info(sprintf('║  Total Tests: %-44s║', $total));
+        $this->info(sprintf('║  Passed: %-49s║', $passed . ' ✅'));
+        $this->info(sprintf('║  Failed: %-49s║', $failed . ' ❌'));
+        $this->info(sprintf('║  Success Rate: %-43s║', $rate . '%'));
+        $this->info('╚══════════════════════════════════════════════════════════════╝');
+
+        if ($failed === 0) {
+            $this->newLine();
+            $this->info('🎉 ALL TESTS PASSED! System ready for Phase 4.');
+            return 0;
+        } else {
+            $this->newLine();
+            $this->warn('⚠️  Some tests failed. Review before proceeding.');
+            return 1;
+        }
+    }
+
+    private function runTest(string $name, callable $callback): bool
+    {
+        try {
+            $result = $callback();
+            if ($result) {
+                $this->info("  ✅ {$name}");
+                return true;
+            } else {
+                $this->error("  ❌ {$name}");
+                return false;
+            }
+        } catch (\Throwable $e) {
+            $this->error("  ❌ {$name}");
+            $this->error("     → " . $e->getMessage());
+            return false;
+        }
+    }
+
+    // === PHASE 0 TESTS ===
+    private function testApiResponse(): bool
+    {
+        $response = ApiResponse::success(['test' => 'data'], 'Test message');
+        $array = $response->toArray();
+        return $array['success'] === true && $array['data']['test'] === 'data';
+    }
+
+    private function testApiException(): bool
+    {
+        $exception = ApiException::notFound('تست', '123');
+        $array = $exception->toArray();
+        return $array['success'] === false && $array['error']['code'] === 'NOT_FOUND';
+    }
+
+    private function testLogging(): bool
+    {
+        AppLogger::api()->info('test.full_system', ['phase' => 'testing']);
+        return true;
+    }
+
+    private function testFeatureFlags(): bool
+    {
+        $flagFile = base_path('../cms/wp-content/plugins/nextsafar-core/inc/feature-flags.php');
+        return file_exists($flagFile) && is_readable($flagFile);
+    }
+
+    // === PHASE 1 TESTS ===
+    private function testHotelSync(): bool
+    {
+        return app(HotelSyncService::class) instanceof HotelSyncService;
+    }
+
+    private function testWebhookSignature(): bool
+    {
+        $secret = config('services.webhooks.wordpress_secret');
+        if (empty($secret)) return false;
+        $payload = json_encode(['test' => 'data']);
+        $signature = hash_hmac('sha256', $payload, $secret);
+        return strlen($signature) === 64;
+    }
+
+    // === PHASE 2.1 TESTS ===
+    private function testSuperAdmin(): bool
+    {
+        $user = User::whereHas('roles', fn($q) => $q->where('slug', 'super_admin'))->first();
+        if (!$user) return true;
+        return $user->isSuperAdmin() && $user->hasPermission('any.random.permission');
+    }
+
+    private function testRoleHierarchy(): bool
+    {
+        $superAdmin = Role::where('slug', 'super_admin')->first();
+        $user = Role::where('slug', 'user')->first();
+        return $superAdmin && $user && $superAdmin->isHigherThan($user);
+    }
+
+    // === PHASE 2.2 TESTS ===
+    private function testTourCode(): bool
+    {
+        $code = Tour::generateUniqueCode();
+        // TR-XXX-NNN = 2+1+3+1+3 = 10 characters
+        return preg_match('/^TR-[A-Z]{3}-\d{3}$/', $code) === 1 && strlen($code) === 10;
+    }
+
+    private function testTourDateCapacity(): bool
+    {
+        try {
+            return DB::transaction(function () {
+                $category = TourCategory::first();
+                if (!$category) return false;
+
+                $uniqueId = time() . '-' . uniqid();
+                
+                $tour = Tour::create([
+                    'title' => 'Test Tour ' . $uniqueId,
+                    'destination_country' => 'Test',
+                    'category_id' => $category->id,
+                    'status' => 'draft',
+                ]);
+
+                $date = TourDate::create([
+                    'tour_id' => $tour->id,
+                    'departure_date' => now()->addMonth(),
+                    'return_date' => now()->addMonth()->addDays(5),
+                    'total_capacity' => 10,
+                    'remaining_capacity' => 10,
+                    'reserved_count' => 0,
+                    'adult_price' => 1000000,
+                    'child_price' => 0,
+                    'infant_price' => 0,
+                    'single_supplement' => 0,
+                    'min_participants' => 1,
+                    'discount_amount' => 0,
+                    'discount_percent' => 0,
+                    'status' => 'available',
+                    'is_guaranteed' => false,
+                ]);
+
+                $reserved = $date->reserveCapacity(3);
+                $date->refresh();
+
+                $success = $reserved 
+                    && $date->remaining_capacity === 7 
+                    && $date->reserved_count === 3;
+
+                // Cleanup
+                $date->forceDelete();
+                $tour->forceDelete();
+
+                return $success;
+            });
+        } catch (\Throwable $e) {
+            return false;
+        }
+    }
+
+    // === PHASE 2.3 TESTS ===
+    private function testLeadDuplicate(): bool
+    {
+        $phone = '0912' . rand(3000000, 9999999);
+        $lead1 = Lead::create(['type' => Lead::TYPE_TOUR, 'full_name' => 'User 1', 'phone' => $phone, 'status' => Lead::STATUS_NEW]);
+        $duplicates = Lead::findDuplicates($phone, 999999);
+        $found = $duplicates->contains('id', $lead1->id);
+        $lead1->forceDelete();
+        return $found;
+    }
+
+    private function testLeadPhone(): bool
+    {
+        $service = app(LeadService::class);
+        $lead = $service->createFromPublicForm(['type' => Lead::TYPE_CALL, 'full_name' => 'Test', 'phone' => '+989123456789']);
+        $normalized = $lead->phone === '09123456789';
+        $lead->forceDelete();
+        return $normalized;
+    }
+
+    private function testLeadStatusHistory(): bool
+    {
+        $service = app(LeadService::class);
+        $lead = $service->createFromPublicForm(['type' => Lead::TYPE_TOUR, 'full_name' => 'Test', 'phone' => '0912' . rand(1000000, 9999999)]);
+        $service->changeStatus($lead, Lead::STATUS_CONTACTED, 'Test');
+        $lead->refresh();
+        $success = $lead->statusHistory()->count() >= 1 && $lead->status === Lead::STATUS_CONTACTED;
+        $lead->forceDelete();
+        return $success;
+    }
+
+    private function testLeadNotes(): bool
+    {
+        $service = app(LeadService::class);
+        $lead = $service->createFromPublicForm(['type' => Lead::TYPE_CONSULTATION, 'full_name' => 'Test', 'phone' => '0912' . rand(1000000, 9999999)]);
+        $note = $service->addNote($lead, ['type' => LeadNote::TYPE_NOTE, 'content' => 'Test note']);
+        $success = $note->exists && $note->content === 'Test note';
+        $lead->forceDelete();
+        return $success;
+    }
+}

@@ -1,0 +1,459 @@
+<?php
+
+namespace App\Modules\Order\Services;
+
+use App\Core\Logging\AppLogger;
+use App\Exceptions\ApiException;
+use App\Core\ApiErrorCode;
+use App\Models\User;
+use App\Modules\Lead\Models\Lead;
+use App\Modules\Order\Models\Order;
+use App\Modules\Order\Models\OrderItem;
+use App\Modules\Order\Models\OrderPassenger;
+use App\Modules\Order\Repositories\OrderRepository;
+use Illuminate\Support\Facades\DB;
+use Throwable;
+
+class OrderService
+{
+    public function __construct(
+        protected OrderRepository $repository,
+    ) {}
+
+    // =====================================================================
+    // ۱. ایجاد سفارش
+    // =====================================================================
+
+    /**
+     * ایجاد سفارش جدید (توسط ادمین یا API)
+     */
+    public function createOrder(array $data, ?User $creator = null): Order
+    {
+        return DB::transaction(function () use ($data, $creator) {
+            $data['created_by'] = $creator?->id ?? auth()->id();
+            $data['status'] = $data['status'] ?? Order::STATUS_DRAFT;
+            $data['code'] = Order::generateUniqueCode();
+
+            // محاسبه اولیه مبالغ
+            $data['subtotal'] = $data['subtotal'] ?? 0;
+            $data['discount_amount'] = $data['discount_amount'] ?? 0;
+            $data['tax_amount'] = $data['tax_amount'] ?? 0;
+            $data['total_amount'] = $data['subtotal'] - $data['discount_amount'] + $data['tax_amount'];
+
+            // IP و User Agent
+            $data['ip_address'] = $data['ip_address'] ?? request()->ip();
+            $data['user_agent'] = $data['user_agent'] ?? substr(request()->userAgent() ?? '', 0, 500);
+
+            $order = $this->repository->create($data);
+
+            // ثبت تاریخچه اولیه
+            $this->repository->recordStatusChange(
+                $order,
+                $order->status,
+                'ایجاد سفارش',
+                $creator,
+                'manual'
+            );
+
+            AppLogger::booking()->info('order.created', [
+                'order_id' => $order->id,
+                'code' => $order->code,
+                'type' => $order->type,
+                'total_amount' => $order->total_amount,
+            ]);
+
+            return $this->repository->findWithDetails($order->id);
+        });
+    }
+
+    /**
+     * تبدیل Lead به سفارش (قانون ۱۰.۳)
+     * این یکی از مهم‌ترین متدهاست - پل بین CRM و فروش
+     */
+    public function convertLeadToOrder(Lead $lead, array $orderData = [], ?User $creator = null): Order
+    {
+        // اعتبارسنجی: لید باید در وضعیت باز باشد
+        if (!$lead->isOpen() && $lead->status !== Lead::STATUS_NEW) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'این درخواست قبلاً بسته شده و قابل تبدیل به سفارش نیست.',
+                httpStatus: 422,
+                details: ['current_status' => $lead->status],
+            );
+        }
+
+        // اعتبارسنجی: لید نباید قبلاً تبدیل شده باشد
+        if ($lead->isConverted()) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'این درخواست قبلاً به سفارش تبدیل شده است.',
+                httpStatus: 422,
+                details: ['lead_code' => $lead->code],
+            );
+        }
+
+        return DB::transaction(function () use ($lead, $orderData, $creator) {
+            // ساخت داده‌های سفارش از لید
+            $data = array_merge([
+                'lead_id' => $lead->id,
+                'user_id' => $lead->user_id,
+                'source' => 'lead',
+                'type' => $this->mapLeadTypeToOrderType($lead->type),
+                'adults_count' => $lead->adults ?? 1,
+                'children_count' => $lead->children ?? 0,
+                'infants_count' => $lead->infants ?? 0,
+                'customer_notes' => $lead->message,
+                'ip_address' => $lead->ip_address,
+                'utm_source' => $lead->utm_source,
+                'utm_medium' => $lead->utm_medium,
+                'utm_campaign' => $lead->utm_campaign,
+            ], $orderData);
+
+            $order = $this->createOrder($data, $creator);
+
+            // به‌روزرسانی Lead
+            $lead->update([
+                'converted_booking_id' => $order->id,
+                'converted_at' => now(),
+                'status' => Lead::STATUS_CONVERTED,
+            ]);
+
+            // ثبت تاریخچه Lead
+            $lead->statusHistory()->create([
+                'old_status' => $lead->getOriginal('status'),
+                'new_status' => Lead::STATUS_CONVERTED,
+                'reason' => "تبدیل به سفارش #{$order->code}",
+                'changed_by' => $creator?->id ?? auth()->id(),
+                'changed_by_name' => $creator?->name ?? auth()->user()?->name ?? 'System',
+                'ip_address' => request()->ip(),
+                'changed_at' => now(),
+            ]);
+
+            AppLogger::booking()->info('lead.converted_to_order', [
+                'lead_id' => $lead->id,
+                'lead_code' => $lead->code,
+                'order_id' => $order->id,
+                'order_code' => $order->code,
+            ]);
+
+            return $order;
+        });
+    }
+
+    // =====================================================================
+    // ۲. مدیریت وضعیت سفارش (مهم‌ترین بخش طبق قانون ۱۳.۳.۵)
+    // =====================================================================
+
+    /**
+     * تغییر وضعیت سفارش با اعتبارسنجی کامل
+     * قانون ۱۳.۳.۲: هر تغییر وضعیت باید لاگ شود
+     * قانون ۱۳.۳.۵: فرانت نباید مستقیم وضعیت را تغییر دهد
+     */
+    public function changeStatus(
+        Order $order,
+        string $newStatus,
+        ?string $reason = null,
+        ?User $changedBy = null,
+        string $source = 'manual',
+        ?array $metadata = null
+    ): Order {
+        // اعتبارسنجی ۱: آیا این وضعیت معتبر است؟
+        if (!in_array($newStatus, Order::ALL_STATUSES)) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::INVALID_INPUT,
+                userMessage: 'وضعیت انتخابی معتبر نیست.',
+                httpStatus: 422,
+            );
+        }
+
+        // اعتبارسنجی ۲: آیا این انتقال مجاز است؟
+        if (!$order->canTransitionTo($newStatus)) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: "تغییر وضعیت از '{$order->status_label}' به '{$newStatus}' مجاز نیست.",
+                httpStatus: 422,
+                details: [
+                    'current_status' => $order->status,
+                    'requested_status' => $newStatus,
+                    'allowed_statuses' => Order::VALID_TRANSITIONS[$order->status] ?? [],
+                ],
+            );
+        }
+
+        return DB::transaction(function () use ($order, $newStatus, $reason, $changedBy, $source, $metadata) {
+            $oldStatus = $order->status;
+
+            // تغییر وضعیت
+            $order->status = $newStatus;
+
+            // تنظیم timestamp ها بر اساس وضعیت
+            if ($newStatus === Order::STATUS_PAID && !$order->paid_at) {
+                $order->paid_at = now();
+            }
+            if ($newStatus === Order::STATUS_CONFIRMED && !$order->confirmed_at) {
+                $order->confirmed_at = now();
+            }
+            if ($newStatus === Order::STATUS_CANCELLED) {
+                $order->cancelled_at = now();
+                $order->cancellation_reason = $reason;
+            }
+
+            $order->save();
+
+            // ثبت تاریخچه (قانون ۱۳.۳.۲)
+            $this->repository->recordStatusChange(
+                $order,
+                $newStatus,
+                $reason,
+                $changedBy,
+                $source,
+                $metadata
+            );
+
+            // لاگ‌های مختلف بر اساس وضعیت
+            AppLogger::booking()->info('order.status_changed', [
+                'order_id' => $order->id,
+                'code' => $order->code,
+                'old_status' => $oldStatus,
+                'new_status' => $newStatus,
+                'changed_by' => $changedBy?->id ?? auth()->id(),
+                'source' => $source,
+                'reason' => $reason,
+            ]);
+
+            // TODO (فاز بعدی): Trigger notification jobs
+            // dispatch(new SendOrderStatusNotification($order, $newStatus));
+
+            return $order->fresh();
+        });
+    }
+
+    /**
+     * لغو سفارش
+     */
+    public function cancelOrder(Order $order, string $reason, ?User $cancelledBy = null): Order
+    {
+        return $this->changeStatus(
+            $order,
+            Order::STATUS_CANCELLED,
+            $reason,
+            $cancelledBy,
+            'manual'
+        );
+    }
+
+    /**
+     * درخواست استرداد (توسط کاربر)
+     */
+    public function requestRefund(Order $order, string $reason, ?User $user = null): Order
+    {
+        // فقط کاربر مالک یا ادمین می‌تواند درخواست دهد
+        if ($user && $order->user_id !== $user->id && !$user->hasPermission('refunds.create')) {
+            throw ApiException::forbidden();
+        }
+
+        return $this->changeStatus(
+            $order,
+            Order::STATUS_REFUND_REQUESTED,
+            $reason,
+            $user,
+            'user_request'
+        );
+    }
+
+    // =====================================================================
+    // ۳. مدیریت آیتم‌ها
+    // =====================================================================
+
+    /**
+     * افزودن آیتم به سفارش
+     */
+    public function addItem(Order $order, array $itemData): OrderItem
+    {
+        // سفارش در وضعیت پیش‌نویس یا نیازمند بررسی باید باشد
+        if (!in_array($order->status, [Order::STATUS_DRAFT, Order::STATUS_PENDING_REVIEW])) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'فقط در سفارش‌های پیش‌نویس می‌توان آیتم اضافه کرد.',
+                httpStatus: 422,
+            );
+        }
+
+        // محاسبه total_price
+        $itemData['total_price'] = ($itemData['unit_price'] * ($itemData['quantity'] ?? 1))
+            - ($itemData['discount_amount'] ?? 0);
+
+        $item = $this->repository->addItem($order, $itemData);
+
+        AppLogger::booking()->info('order.item_added', [
+            'order_id' => $order->id,
+            'item_id' => $item->id,
+            'item_type' => $item->item_type,
+            'total_price' => $item->total_price,
+        ]);
+
+        return $item;
+    }
+
+    /**
+     * حذف آیتم
+     */
+    public function removeItem(OrderItem $item): bool
+    {
+        $order = $item->order;
+
+        if (!in_array($order->status, [Order::STATUS_DRAFT, Order::STATUS_PENDING_REVIEW])) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'فقط در سفارش‌های پیش‌نویس می‌توان آیتم را حذف کرد.',
+                httpStatus: 422,
+            );
+        }
+
+        return $this->repository->removeItem($item);
+    }
+
+    // =====================================================================
+    // ۴. مدیریت مسافران
+    // =====================================================================
+
+    /**
+     * افزودن مسافر
+     */
+    public function addPassenger(Order $order, array $passengerData): OrderPassenger
+    {
+        // سفارش نباید در وضعیت پایانی باشد
+        if ($order->isTerminal()) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'سفارش در وضعیت پایانی است و امکان افزودن مسافر وجود ندارد.',
+                httpStatus: 422,
+            );
+        }
+
+        // اعتبارسنجی national_id
+        if (!empty($passengerData['national_id'])) {
+            $passengerData['national_id'] = $this->normalizeNationalId($passengerData['national_id']);
+        }
+
+        $passenger = $this->repository->addPassenger($order, $passengerData);
+
+        AppLogger::booking()->info('order.passenger_added', [
+            'order_id' => $order->id,
+            'passenger_id' => $passenger->id,
+            'name' => $passenger->full_name,
+        ]);
+
+        return $passenger;
+    }
+
+    /**
+     * افزودن چند مسافر یکجا
+     */
+    public function addPassengers(Order $order, array $passengersData): array
+    {
+        $passengers = [];
+        foreach ($passengersData as $data) {
+            $passengers[] = $this->addPassenger($order, $data);
+        }
+        return $passengers;
+    }
+
+    // =====================================================================
+    // ۵. محاسبات مالی
+    // =====================================================================
+
+    /**
+     * اعمال کد تخفیف (placeholder - در فاز بعدی با ماژول Coupon تکمیل می‌شود)
+     */
+    public function applyCoupon(Order $order, string $couponCode): Order
+    {
+        // TODO: در فاز بعدی پیاده‌سازی می‌شود
+        throw new ApiException(
+            errorCode: ApiErrorCode::VALIDATION_FAILED,
+            userMessage: 'ماژول کد تخفیف هنوز پیاده‌سازی نشده است.',
+            httpStatus: 501,
+        );
+    }
+
+    /**
+     * محاسبه مجدد مبالغ سفارش
+     */
+    public function recalculate(Order $order): Order
+    {
+        return $this->repository->recalculateTotals($order);
+    }
+
+    // =====================================================================
+    // ۶. اتصال به Payment (placeholder برای فاز بعدی)
+    // =====================================================================
+
+    /**
+     * شروع فرآیند پرداخت
+     * TODO: در فاز بعدی (Payment Module) به درگاه متصل می‌شود
+     */
+    public function initiatePayment(Order $order): array
+    {
+        if (!$order->canTransitionTo(Order::STATUS_PENDING_PAYMENT)) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'این سفارش در وضعیت قابل پرداخت نیست.',
+                httpStatus: 422,
+            );
+        }
+
+        if ($order->total_amount <= 0) {
+            throw new ApiException(
+                errorCode: ApiErrorCode::VALIDATION_FAILED,
+                userMessage: 'مبلغ سفارش باید بیشتر از صفر باشد.',
+                httpStatus: 422,
+            );
+        }
+
+        // تغییر وضعیت به در انتظار پرداخت
+        $this->changeStatus(
+            $order,
+            Order::STATUS_PENDING_PAYMENT,
+            'آماده پرداخت',
+            auth()->user(),
+            'system'
+        );
+
+        // TODO: در فاز بعدی اینجا Payment record ساخته می‌شود و لینک درگاه برگردانده می‌شود
+        return [
+            'order_id' => $order->id,
+            'order_code' => $order->code,
+            'amount' => $order->total_amount,
+            'payment_url' => null, // placeholder
+            'message' => 'سفارش آماده پرداخت است. ماژول درگاه در فاز بعدی فعال می‌شود.',
+        ];
+    }
+
+    // =====================================================================
+    // ۷. Private Helpers
+    // =====================================================================
+
+    /**
+     * مپ کردن نوع Lead به نوع Order
+     */
+    private function mapLeadTypeToOrderType(string $leadType): string
+    {
+        return match ($leadType) {
+            Lead::TYPE_TOUR => Order::TYPE_TOUR,
+            Lead::TYPE_HOTEL => Order::TYPE_HOTEL,
+            Lead::TYPE_VISA => Order::TYPE_VISA,
+            default => Order::TYPE_MIXED,
+        };
+    }
+
+    /**
+     * نرمال‌سازی کد ملی
+     */
+    private function normalizeNationalId(string $id): string
+    {
+        // حذف فاصله‌ها و خط‌ها
+        $id = preg_replace('/[^0-9]/', '', $id);
+        // پر کردن با صفر در ابتدا اگر کمتر از ۱۰ رقم
+        return str_pad($id, 10, '0', STR_PAD_LEFT);
+    }
+}

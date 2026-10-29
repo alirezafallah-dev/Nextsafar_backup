@@ -1,0 +1,190 @@
+<?php
+
+namespace App\Modules\Notification\Repositories;
+
+use App\Modules\Notification\Enums\NotificationChannel;
+use App\Modules\Notification\Enums\NotificationStatus;
+use App\Modules\Notification\Models\Notification;
+use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Eloquent\Collection;
+
+class NotificationRepository
+{
+    /**
+     * فیلتر پیشرفته notification ها (برای پنل ادمین)
+     */
+    public function filter(array $filters, int $perPage = 20): LengthAwarePaginator
+    {
+        $query = Notification::with(['user:id,name,phone,email', 'template:id,code,name'])
+            ->latest();
+
+        // Status filter
+        if (!empty($filters['status'])) {
+            $query->where('status', $filters['status']);
+        }
+
+        // Channel filter
+        if (!empty($filters['channel'])) {
+            $query->byChannel(NotificationChannel::from($filters['channel']));
+        }
+
+        // Event filter
+        if (!empty($filters['event_type'])) {
+            $query->byEvent($filters['event_type']);
+        }
+
+        // User filter
+        if (!empty($filters['user_id'])) {
+            $query->forUser((int) $filters['user_id']);
+        }
+
+        // Recipient filter
+        if (!empty($filters['recipient'])) {
+            $query->where('recipient', 'ilike', "%{$filters['recipient']}%");
+        }
+
+        // Search
+        if (!empty($filters['search'])) {
+            $term = $filters['search'];
+            $query->where(function ($q) use ($term) {
+                $q->where('code', 'ilike', "%{$term}%")
+                    ->orWhere('subject', 'ilike', "%{$term}%")
+                    ->orWhere('content', 'ilike', "%{$term}%");
+            });
+        }
+
+        // Date range
+        if (!empty($filters['date_from'])) {
+            $query->whereDate('created_at', '>=', $filters['date_from']);
+        }
+        if (!empty($filters['date_to'])) {
+            $query->whereDate('created_at', '<=', $filters['date_to']);
+        }
+
+        // Has errors filter
+        if (isset($filters['has_errors']) && $filters['has_errors']) {
+            $query->whereNotNull('error_message');
+        }
+
+        // Sort
+        $sort = $filters['sort'] ?? 'newest';
+        $query = match ($sort) {
+            'newest' => $query->latest(),
+            'oldest' => $query->oldest(),
+            'priority' => $query->orderByRaw("FIELD(priority, 'urgent', 'high', 'normal', 'low')")->latest(),
+            default => $query->latest(),
+        };
+
+        return $query->paginate($perPage);
+    }
+
+    /**
+     * اعلان‌های خوانده نشده کاربر
+     */
+    public function getUnreadForUser(int $userId, int $limit = 50): Collection
+    {
+        return Notification::forUser($userId)
+            ->byChannel(NotificationChannel::INTERNAL)
+            ->unread()
+            ->with('template:id,code,name')
+            ->latest()
+            ->limit($limit)
+            ->get();
+    }
+
+    /**
+     * تعداد اعلان‌های خوانده نشده کاربر
+     */
+    public function getUnreadCountForUser(int $userId): int
+    {
+        return Notification::forUser($userId)
+            ->byChannel(NotificationChannel::INTERNAL)
+            ->unread()
+            ->count();
+    }
+
+    /**
+     * علامت‌گذاری همه به عنوان خوانده شده
+     */
+    public function markAllAsReadForUser(int $userId): int
+    {
+        return Notification::forUser($userId)
+            ->byChannel(NotificationChannel::INTERNAL)
+            ->unread()
+            ->update(['delivered_at' => now()]);
+    }
+
+    /**
+     * علامت‌گذاری یک اعلان به عنوان خوانده شده
+     */
+    public function markAsRead(int $notificationId, int $userId): bool
+    {
+        return Notification::where('id', $notificationId)
+            ->where('user_id', $userId)
+            ->where('channel', NotificationChannel::INTERNAL)
+            ->whereNull('delivered_at')
+            ->update(['delivered_at' => now()]) > 0;
+    }
+
+    /**
+     * آمار dashboard
+     */
+    public function getStatistics(): array
+    {
+        $baseQuery = Notification::query();
+
+        return [
+            'total' => (clone $baseQuery)->count(),
+            'sent' => (clone $baseQuery)->whereIn('status', [NotificationStatus::SENT, NotificationStatus::DELIVERED])->count(),
+            'failed' => (clone $baseQuery)->where('status', NotificationStatus::FAILED)->count(),
+            'pending' => (clone $baseQuery)->where('status', NotificationStatus::PENDING)->count(),
+            'retrying' => (clone $baseQuery)->where('status', NotificationStatus::RETRYING)->count(),
+
+            'by_channel' => (clone $baseQuery)
+                ->selectRaw('channel, count(*) as count')
+                ->groupBy('channel')
+                ->pluck('count', 'channel')
+                ->toArray(),
+
+            'by_status' => (clone $baseQuery)
+                ->selectRaw('status, count(*) as count')
+                ->groupBy('status')
+                ->pluck('count', 'status')
+                ->toArray(),
+
+            'by_event' => (clone $baseQuery)
+                ->selectRaw('event_type, count(*) as count')
+                ->groupBy('event_type')
+                ->orderByDesc('count')
+                ->limit(10)
+                ->pluck('count', 'event_type')
+                ->toArray(),
+
+            'today' => (clone $baseQuery)->whereDate('created_at', today())->count(),
+            'this_week' => (clone $baseQuery)
+                ->whereBetween('created_at', [now()->startOfWeek(), now()->endOfWeek()])
+                ->count(),
+            'this_month' => (clone $baseQuery)
+                ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->count(),
+
+            'success_rate' => $this->calculateSuccessRate(),
+            'avg_delivery_time_ms' => (clone $baseQuery)
+                ->whereNotNull('sent_at')
+                ->whereNotNull('delivered_at')
+                ->selectRaw('AVG(EXTRACT(EPOCH FROM (delivered_at - sent_at)) * 1000) as avg_ms')
+                ->value('avg_ms') ?? 0,
+        ];
+    }
+
+    private function calculateSuccessRate(): float
+    {
+        $total = Notification::count();
+        if ($total === 0) {
+            return 0;
+        }
+
+        $successful = Notification::whereIn('status', [NotificationStatus::SENT, NotificationStatus::DELIVERED])->count();
+        return round(($successful / $total) * 100, 2);
+    }
+}

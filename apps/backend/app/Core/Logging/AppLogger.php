@@ -1,0 +1,131 @@
+<?php
+
+namespace App\Core\Logging;
+
+use Illuminate\Support\Facades\Log;
+use Throwable;
+
+/**
+ * Structured Application Logger.
+ * All logs are written as JSON with standard fields for easy parsing.
+ */
+class AppLogger
+{
+    private LogChannel $channel;
+    private array $context = [];
+
+    private function __construct(LogChannel $channel)
+    {
+        $this->channel = $channel;
+    }
+
+    /**
+     * Create a logger for a specific channel.
+     */
+    public static function channel(LogChannel $channel): self
+    {
+        return new self($channel);
+    }
+
+    // Shortcut factory methods
+    public static function api(): self { return self::channel(LogChannel::API); }
+    public static function admin(): self { return self::channel(LogChannel::ADMIN); }
+    public static function payment(): self { return self::channel(LogChannel::PAYMENT); }
+    public static function provider(): self { return self::channel(LogChannel::PROVIDER); }
+    public static function sync(): self { return self::channel(LogChannel::SYNC); }
+    public static function search(): self { return self::channel(LogChannel::SEARCH); }
+    public static function booking(): self { return self::channel(LogChannel::BOOKING); }
+    public static function security(): self { return self::channel(LogChannel::SECURITY); }
+    public static function visa(): self { return self::channel(LogChannel::VISA); }
+    public static function notification(): self { return self::channel(LogChannel::NOTIFICATION); }
+    public static function finance(): self { return self::channel(LogChannel::FINANCE); }
+
+    /**
+     * Add contextual data to all subsequent logs.
+     */
+    public function with(array $context): self
+    {
+        $this->context = array_merge($this->context, $context);
+        return $this;
+    }
+
+    /**
+     * Add user context if available.
+     */
+    public function withUser(?int $userId = null): self
+    {
+        $user = $userId ?? (auth()->check() ? auth()->id() : null);
+        if ($user) {
+            $this->context['user_id'] = $user;
+        }
+        return $this;
+    }
+
+    /**
+     * Add request context (request ID, IP, etc).
+     */
+    public function withRequest(): self
+    {
+        if (request()) {
+            $this->context['request_id'] = request()->header('X-Request-Id') ?? (string) str()->uuid();
+            $this->context['ip'] = request()->ip();
+            $this->context['user_agent'] = request()->userAgent();
+        }
+        return $this;
+    }
+
+    /**
+     * Add exception details.
+     */
+    public function withException(Throwable $e): self
+    {
+        $this->context['exception'] = [
+            'class' => get_class($e),
+            'message' => $e->getMessage(),
+            'code' => $e->getCode(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ];
+        return $this;
+    }
+
+    /**
+     * Build the structured payload.
+     */
+    private function buildPayload(string $event, array $data = []): array
+    {
+        return array_merge([
+            'event' => $event,
+            'timestamp' => now()->toIso8601String(),
+            'channel' => $this->channel->value,
+        ], $this->context, $data);
+    }
+
+    /**
+     * Log at various levels.
+     */
+    public function info(string $event, array $data = []): void
+    {
+        Log::channel($this->channel->value)->info('', $this->buildPayload($event, $data));
+    }
+
+    public function warning(string $event, array $data = []): void
+    {
+        Log::channel($this->channel->value)->warning('', $this->buildPayload($event, $data));
+    }
+
+    public function error(string $event, array $data = []): void
+    {
+        Log::channel($this->channel->value)->error('', $this->buildPayload($event, $data));
+    }
+
+    public function critical(string $event, array $data = []): void
+    {
+        Log::channel($this->channel->value)->critical('', $this->buildPayload($event, $data));
+    }
+
+    public function debug(string $event, array $data = []): void
+    {
+        Log::channel($this->channel->value)->debug('', $this->buildPayload($event, $data));
+    }
+}

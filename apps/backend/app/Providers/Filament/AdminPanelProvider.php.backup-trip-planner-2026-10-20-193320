@@ -1,0 +1,80 @@
+<?php
+
+namespace App\Providers\Filament;
+
+use Filament\Http\Middleware\Authenticate;
+use Filament\Http\Middleware\AuthenticateSession;
+use Filament\Http\Middleware\DisableBladeIconComponents;
+use Filament\Http\Middleware\DispatchServingFilamentEvent;
+use Filament\Panel;
+use Filament\PanelProvider;
+use Filament\Support\Colors\Color;
+use Filament\View\PanelsRenderHook;
+use Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse;
+use Illuminate\Cookie\Middleware\EncryptCookies;
+use Illuminate\Foundation\Http\Middleware\PreventRequestForgery;
+use Illuminate\Routing\Middleware\SubstituteBindings;
+use Illuminate\Session\Middleware\StartSession;
+use Illuminate\Support\Facades\Blade;
+use Illuminate\View\Middleware\ShareErrorsFromSession;
+
+class AdminPanelProvider extends PanelProvider
+{
+    public function panel(Panel $panel): Panel
+    {
+        return $panel
+            ->default()
+            ->id('admin')
+            ->path('admin')
+            ->login()
+            ->brandName('سفر بعدی ایرانیان')
+            ->colors([
+                'primary' => [
+                    50 => '#fef9f0', 100 => '#fdf0d9', 200 => '#fbe0b2',
+                    300 => '#f9ca81', 400 => '#f7b250', 500 => '#fba834',
+                    600 => '#e8921f', 700 => '#c6771a', 800 => '#a15e1a',
+                    900 => '#824d19', 950 => '#46260b',
+                ],
+                'danger' => Color::Red,
+                'warning' => Color::Orange,
+                'success' => Color::Green,
+                'info' => Color::Sky,
+                'gray' => Color::Zinc,
+            ])
+            ->renderHook(
+                PanelsRenderHook::HEAD_END,
+                fn (): string => Blade::render(
+                    '<link rel="stylesheet" href="' . asset('css/filament-custom.css') . '?v=6">'
+                ),
+            )
+            ->renderHook(
+                PanelsRenderHook::BODY_END,
+                fn (): string => Blade::render(
+                    '<script src="' . asset('js/filament-custom.js') . '?v=6"></script>'
+                ),
+            )
+            ->discoverResources(in: app_path('Filament/Admin/Resources'), for: 'App\\Filament\\Admin\\Resources')
+            ->discoverPages(in: app_path('Filament/Admin/Pages'), for: 'App\\Filament\\Admin\\Pages')
+            ->discoverWidgets(in: app_path('Filament/Admin/Widgets'), for: 'App\\Filament\\Admin\\Widgets')
+            ->pages([\Filament\Pages\Dashboard::class])
+            ->widgets([
+                \Filament\Widgets\AccountWidget::class,
+                \App\Filament\Admin\Widgets\StatsOverviewWidget::class,
+                \App\Filament\Admin\Widgets\RevenueChartWidget::class,
+                \App\Filament\Admin\Widgets\RecentOrdersWidget::class,
+                \App\Filament\Admin\Widgets\PendingActionsWidget::class,
+            ])
+            ->middleware([
+                EncryptCookies::class,
+                AddQueuedCookiesToResponse::class,
+                StartSession::class,
+                AuthenticateSession::class,
+                ShareErrorsFromSession::class,
+                PreventRequestForgery::class,
+                SubstituteBindings::class,
+                DisableBladeIconComponents::class,
+                DispatchServingFilamentEvent::class,
+            ])
+            ->authMiddleware([Authenticate::class]);
+    }
+}
