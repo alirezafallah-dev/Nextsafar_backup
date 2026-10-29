@@ -1,0 +1,102 @@
+[
+  {
+    "id": 401,
+    "slug": "destination-istanbul",
+    "title": { "rendered": "استانبول، دروازه اروپا و آسیا" },
+    "excerpt": { "rendered": "<p>شهری که دو قاره را به هم پیوند می‌زند</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-istanbul/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ترکیه", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 402,
+    "slug": "destination-dubai",
+    "title": { "rendered": "دبی، شهر رویاها و آسمان‌خراش‌ها" },
+    "excerpt": { "rendered": "<p>لوکس‌ترین مقصد گردشگری خاورمیانه</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-dubai/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "امارات", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 403,
+    "slug": "destination-paris",
+    "title": { "rendered": "پاریس، شهر نور و عشق" },
+    "excerpt": { "rendered": "<p>پایتخت هنر، مد و فرهنگ اروپا</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-paris/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "فرانسه", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 404,
+    "slug": "destination-tokyo",
+    "title": { "rendered": "توکیو، ترکیب سنت و مدرنیته" },
+    "excerpt": { "rendered": "<p>پایتخت شگفت‌انگیز ژاپن با فرهنگ منحصر به فرد</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-tokyo/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ژاپن", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 405,
+    "slug": "destination-bangkok",
+    "title": { "rendered": "بانکوک، قلب تپنده تایلند" },
+    "excerpt": { "rendered": "<p>شهر معابد طلایی و غذاهای خیابانی بی‌نظیر</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-bangkok/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "تایلند", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 406,
+    "slug": "destination-rome",
+    "title": { "rendered": "رم، شهر ابدی" },
+    "excerpt": { "rendered": "<p>تاریخ زنده در پایتخت ایتالیا</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-rome/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ایتالیا", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 407,
+    "slug": "destination-barcelona",
+    "title": { "rendered": "بارسلون، شهر گاودی" },
+    "excerpt": { "rendered": "<p>معماری منحصربه‌فرد و سواحل مدیترانه‌ای</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-barcelona/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "اسپانیا", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 408,
+    "slug": "destination-antalya",
+    "title": { "rendered": "آنتالیا، مروارید مدیترانه" },
+    "excerpt": { "rendered": "<p>سواحل فیروزه‌ای و هتل‌های لوکس ترکیه</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-antalya/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "ترکیه", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 409,
+    "slug": "destination-tbilisi",
+    "title": { "rendered": "تفلیس، گنجینه قفقاز" },
+    "excerpt": { "rendered": "<p>پایتخت جذاب گرجستان با معماری منحصر به فرد</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-tbilisi/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "گرجستان", "taxonomy": "destination_category" }]]
+    }
+  },
+  {
+    "id": 410,
+    "slug": "destination-kuala-lumpur",
+    "title": { "rendered": "کوالالامپور، مدرنیته در دل جنگل" },
+    "excerpt": { "rendered": "<p>پایتخت مالزی با برج‌های دوقلو و غذاهای متنوع</p>" },
+    "_embedded": {
+      "wp:featuredmedia": [{ "source_url": "https://picsum.photos/seed/dest-kl/800/600", "media_type": "image" }],
+      "wp:term": [[{ "name": "مالزی", "taxonomy": "destination_category" }]]
+    }
+  }
+]

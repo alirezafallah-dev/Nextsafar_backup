@@ -1,0 +1,7 @@
+[
+  { "id": 601, "slug": "tour-turkey", "name": "تور ترکیه", "count": 45, "ns_term_image": "https://images.unsplash.com/photo-1524231757912-21f4fe3a72ff?w=400", "ns_tour_info": { "duration": 7 } },
+  { "id": 602, "slug": "tour-uae", "name": "تور امارات", "count": 38, "ns_term_image": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?w=400", "ns_tour_info": { "duration": 5 } },
+  { "id": 603, "slug": "tour-europe", "name": "تور اروپا", "count": 32, "ns_term_image": "https://images.unsplash.com/photo-1467269204594-9661b134dd2b?w=400", "ns_tour_info": { "duration": 10 } },
+  { "id": 604, "slug": "tour-japan", "name": "تور ژاپن", "count": 25, "ns_term_image": "https://images.unsplash.com/photo-1540959733332-eab4deabeeaf?w=400", "ns_tour_info": { "duration": 12 } },
+  { "id": 605, "slug": "tour-thailand", "name": "تور تایلند", "count": 28, "ns_term_image": "https://images.unsplash.com/photo-1528181304800-259b08848526?w=400", "ns_tour_info": { "duration": 8 } }
+]
