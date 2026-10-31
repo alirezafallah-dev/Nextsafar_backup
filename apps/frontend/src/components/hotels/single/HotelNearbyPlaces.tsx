@@ -133,26 +133,26 @@ export default function HotelNearbyPlaces({ hotel }: Props) {
         </div>
 
         {/* نقشه */}
-        <div className="relative isolate z-0 h-[260px] lg:h-[320px] rounded-lg overflow-hidden border border-border/60">
+        <div className="relative isolate z-0 h-[220px] sm:h-[260px] lg:h-[320px] rounded-[10px] md:rounded-lg overflow-hidden border border-border/60">
           <ListingMap
             points={places}
             activeKey={activeKey}
             height={320}
             onPointClick={setActiveKey}
-            showFullscreenButton={false}  // ← این خط را اضافه کن
+            showFullscreenButton={false}
             className="rounded-lg"
           />
 
           <button
             onClick={() => setOpenModal(true)}
             className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[500]
-                       inline-flex items-center gap-1.5
-                       px-4 py-2 rounded-md
-                       bg-white border border-border/60
-                       text-[11px] md:text-xs font-bold text-text-strong
-                       hover:border-primary hover:text-primary
-                       shadow-md hover:shadow-lg
-                       transition-all duration-200"
+                      inline-flex items-center gap-1.5
+                      px-4 py-2 rounded-[10px] md:rounded-lg
+                      bg-white border border-border/60
+                      text-[11px] md:text-xs font-bold text-text-strong
+                      hover:border-primary hover:text-primary
+                      shadow-md hover:shadow-lg
+                      transition-all duration-200"
           >
             <MapIcon className="w-3.5 h-3.5 text-primary" />
             نقشه اطراف هتل

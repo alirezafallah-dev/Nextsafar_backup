@@ -1,17 +1,31 @@
-import CascadingCategoryExplorer from "@/components/shared/categories/CascadingCategoryExplorer";
-import type {
-  CategoryLevel1,
-  CategoryLevel2,
-  CategoryLevel3,
+import CascadingCategoryExplorer, {
+  type CategoryLevel1,
+  type CategoryLevel2,
+  type CategoryLevel3,
 } from "@/components/shared/categories/CascadingCategoryExplorer";
 
-/* ═══ Types (برای سازگاری با کد قبلی) ═══ */
-export interface Region extends CategoryLevel1 {}
-export interface Country extends CategoryLevel2 {
-  regionId: number;
+export interface Region {
+  id: number;
+  name: string;
+  slug: string;
+  image: string;
 }
-export interface City extends CategoryLevel3 {
+
+export interface Country {
+  id: number;
+  regionId: number;
+  name: string;
+  slug: string;
+  image: string;
+}
+
+export interface City {
+  id: number;
   countryId: number;
+  name: string;
+  slug: string;
+  image: string;
+  count: number;
 }
 
 export interface HotelCategoriesSectionProps {
@@ -41,7 +55,6 @@ export default function HotelCategoriesSection({
   basePath = "/hotels/category",
   className = "",
 }: HotelCategoriesSectionProps) {
-  // تبدیل regionId → parent_id و countryId → parent_id
   const normalizedCountries: CategoryLevel2[] = countries.map((c) => ({
     id: c.id,
     parent_id: c.regionId,
@@ -50,14 +63,19 @@ export default function HotelCategoriesSection({
     image: c.image,
   }));
 
-  const normalizedCities: CategoryLevel3[] = cities.map((c) => ({
-    id: c.id,
-    parent_id: c.countryId,
-    name: c.name,
-    slug: c.slug,
-    image: c.image,
-    count: c.count,
-  }));
+  const normalizedCities: CategoryLevel3[] = cities.map((c) => {
+    // پیدا کردن slug کشور والد
+    const parentCountry = countries.find((country) => country.id === c.countryId);
+    return {
+      id: c.id,
+      parent_id: c.countryId,
+      name: c.name,
+      slug: c.slug,
+      image: c.image,
+      count: c.count,
+      countrySlug: parentCountry?.slug, // ← اضافه کن
+    };
+  });
 
   return (
     <CascadingCategoryExplorer
@@ -71,6 +89,10 @@ export default function HotelCategoriesSection({
       videoSrc={videoSrc}
       videoPoster={videoPoster}
       basePath={basePath}
+      basePathByLevel={{
+        level2: "/hotels",
+        level3: "",
+      }}
       level1Label="منطقه"
       level2Label="کشور"
       level3Label="شهر"

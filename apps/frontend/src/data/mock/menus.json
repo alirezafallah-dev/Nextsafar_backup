@@ -1,29 +1,169 @@
 {
   "mainmenu": [
-    { "id": 1, "title": "صفحه اصلی", "url": "/", "slug": "home" },
-    { "id": 2, "title": "پرواز", "url": "/flights", "slug": "flights" },
-    { "id": 3, "title": "تورها", "url": "/tours", "slug": "tours" },
-    { "id": 4, "title": "ویزا", "url": "/visas", "slug": "visas" },
-    { "id": 5, "title": "درباره ما", "url": "/about", "slug": "about" },
-    { "id": 6, "title": "تماس با ما", "url": "/contact", "slug": "contact" },
-    { "id": 7, "title": "قوانین", "url": "/terms", "slug": "terms" }
-
+    {
+      "id": 1,
+      "title": "بلیط هواپیما",
+      "url": "/flights",
+      "icon": "Plane",
+      "children": []
+    },
+    {
+      "id": 2,
+      "title": "هتل",
+      "url": "/hotels",
+      "icon": "Building2",
+      "children": []
+    },
+    {
+      "id": 3,
+      "title": "تور",
+      "url": "/tours",
+      "icon": "Map",
+      "children": []
+    },
+    {
+      "id": 4,
+      "title": "قطار",
+      "url": "/trains",
+      "icon": "Train",
+      "children": []
+    },
+    {
+      "id": 5,
+      "title": "اتوبوس",
+      "url": "/buses",
+      "icon": "Bus",
+      "children": []
+    },
+    {
+      "id": 6,
+      "title": "ویزا",
+      "url": "/visa",
+      "icon": "FileCheck",
+      "children": []
+    },
+    {
+      "id": 7,
+      "title": "بیمه مسافرتی",
+      "url": "/insurance",
+      "icon": "Shield",
+      "children": []
+    }
   ],
   "secmenu": [
-    { "id": 8, "title": "هتل‌ها", "url": "/hotels", "slug": "hotels" },
-    { "id": 9, "title": "مقاصد گردشگری", "url": "/travel-destination", "slug": "travel-destination" },
-    { "id": 10, "title": "راهنمای سفر", "url": "/travel-guides", "slug": "travel-guides" },
-    { "id": 11, "title": "رستوران", "url": "/restaurants", "slug": "restaurants" },
-    { "id": 12, "title": "اخبار گردشگری", "url": "/travel-news", "slug": "travel-news" }
+    {
+      "id": 101,
+      "title": "هتل کیش",
+      "url": "/hotels/iran/kish",
+      "icon": null,
+      "children": []
+    },
+    {
+      "id": 102,
+      "title": "هتل مشهد",
+      "url": "/hotels/iran/mashhad",
+      "icon": null,
+      "children": []
+    },
+    {
+      "id": 103,
+      "title": "هتل دبی",
+      "url": "/hotels/uae/dubai",
+      "icon": null,
+      "children": []
+    },
+    {
+      "id": 104,
+      "title": "هتل استانبول",
+      "url": "/hotels/turkey/istanbul",
+      "icon": null,
+      "children": []
+    },
+    {
+      "id": 105,
+      "title": "هتل آنتالیا",
+      "url": "/hotels/turkey/antalya",
+      "icon": null,
+      "children": []
+    },
+    {
+      "id": 106,
+      "title": "هتل بانکوک",
+      "url": "/hotels/thailand/bangkok",
+      "icon": null,
+      "children": []
+    },
+    {
+      "id": 107,
+      "title": "هتل تفلیس",
+      "url": "/hotels/georgia/tbilisi",
+      "icon": null,
+      "children": []
+    },
+    {
+      "id": 108,
+      "title": "هتل باتومی",
+      "url": "/hotels/georgia/batumi",
+      "icon": null,
+      "children": []
+    }
   ],
   "mobilemenu": [
-    { "id": 1, "title": "صفحه اصلی", "url": "/", "slug": "home" },
-    { "id": 2, "title": "هتل‌ها", "url": "/hotels", "slug": "hotels" },
-    { "id": 3, "title": "تورها", "url": "/tours", "slug": "tours" },
-    { "id": 4, "title": "ویزا", "url": "/visas", "slug": "visas" },
-    { "id": 5, "title": "راهنمای سفر", "url": "/travel-guides", "slug": "travel-guides" },
-    { "id": 6, "title": "اخبار گردشگری", "url": "/travel-news", "slug": "travel-news" },
-    { "id": 7, "title": "درباره ما", "url": "/about", "slug": "about" },
-    { "id": 8, "title": "تماس با ما", "url": "/contact", "slug": "contact" }
+    {
+      "id": 201,
+      "title": "بلیط هواپیما",
+      "url": "/flights",
+      "icon": "Plane",
+      "children": []
+    },
+    {
+      "id": 202,
+      "title": "هتل",
+      "url": "/hotels",
+      "icon": "Building2",
+      "children": []
+    },
+    {
+      "id": 203,
+      "title": "تور",
+      "url": "/tours",
+      "icon": "Map",
+      "children": []
+    },
+    {
+      "id": 204,
+      "title": "قطار",
+      "url": "/trains",
+      "icon": "Train",
+      "children": []
+    },
+    {
+      "id": 205,
+      "title": "اتوبوس",
+      "url": "/buses",
+      "icon": "Bus",
+      "children": []
+    },
+    {
+      "id": 206,
+      "title": "ویزا",
+      "url": "/visa",
+      "icon": "FileCheck",
+      "children": []
+    },
+    {
+      "id": 207,
+      "title": "بیمه مسافرتی",
+      "url": "/insurance",
+      "icon": "Shield",
+      "children": []
+    },
+    {
+      "id": 208,
+      "title": "سفر با هوش مصنوعی",
+      "url": "#ai-trip",
+      "icon": "Sparkles",
+      "children": []
+    }
   ]
 }

@@ -174,7 +174,7 @@ function PaginationControls({
         {hasMore && (
           <button
             onClick={onLoadMore}
-            className="flex items-center gap-2 px-5 py-2.5 md:rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-all duration-500 ease-out cursor-pointer group hover:shadow-md"
+            className="flex items-center gap-2 px-5 py-2.5 rounded-md md:rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-all duration-500 ease-out cursor-pointer group hover:shadow-md"
           >
             <Eye className="w-4 h-4" />
             مشاهده بیشتر

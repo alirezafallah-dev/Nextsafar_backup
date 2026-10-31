@@ -166,7 +166,7 @@ export default function HotelAmenities({ hotel, useTestData = true }: Props) {
                 key={i}
                 className={`flex flex-col items-center gap-2 p-3 md:p-4 rounded-[10px] md:rounded-lg border transition-all duration-500 ease-out ${
                   isActive
-                    ? "border-primary-light bg-primary/10 shadow-card-hover"
+                    ? "border-primary-light bg-primary/10"
                     : "border-border bg-white hover:border-primary-light hover:shadow-card-hover"
                 }`}
               >

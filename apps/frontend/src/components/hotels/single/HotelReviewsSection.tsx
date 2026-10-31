@@ -223,53 +223,55 @@ export default function HotelReviewsSection({ hotel }: Props) {
           </div>
 
           {/* کارت نظرات */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 md:gap-4">
             {reviews.map((r, idx) => (
               <article
                 key={r.id}
-                className="relative p-4 rounded-[10px] md:rounded-lg border border-border bg-white hover:border-primary-light hover:shadow-card-hover transition-all duration-500 ease-out overflow-hidden group"
+                className="relative p-4 md:p-5 rounded-[10px] md:rounded-lg border border-border bg-white hover:border-primary-light hover:shadow-card-hover transition-all duration-500 ease-out overflow-hidden group"
               >
-                <Quote className="absolute top-3 end-3 w-6 h-6 text-primary/10 group-hover:text-primary/25 transition" />
+                <Quote className="absolute top-3 end-3 w-6 h-6 md:w-8 md:h-8 text-primary/10 group-hover:text-primary/25 transition" />
 
-                <div className="flex items-center gap-2.5 mb-3">
+                <div className="flex items-center gap-2.5 md:gap-3 mb-3 md:mb-4">
                   <div
-                    className={`w-9 h-9 rounded-md bg-gradient-to-br ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]} text-white flex items-center justify-center text-sm font-black shrink-0 shadow-md`}
+                    className={`w-10 h-10 md:w-11 md:h-11 rounded-[10px] md:rounded-lg bg-gradient-to-br ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]} text-white flex items-center justify-center text-sm md:text-base font-black shrink-0 shadow-md`}
                   >
                     {r.name.charAt(0)}
                   </div>
-                  <div className="min-w-0">
+                  <div className="min-w-0 flex-1">
                     <div className="flex items-center gap-1.5">
-                      <span className="text-[11px] md:text-xs font-extrabold text-text-strong truncate">
+                      <span className="text-xs md:text-sm font-extrabold text-text-strong truncate">
                         {r.name}
                       </span>
-                      <BadgeCheck className="w-3.5 h-3.5 text-primary shrink-0" />
+                      <BadgeCheck className="w-3.5 h-3.5 md:w-4 md:h-4 text-primary shrink-0" />
                     </div>
-                    <span className="text-[9px] md:text-[10px] text-text-muted">{r.date}</span>
+                    <span className="text-[10px] md:text-xs text-text-muted">{r.date}</span>
                   </div>
                 </div>
 
-                <div className="flex gap-0.5 mb-2">
+                <div className="flex gap-0.5 mb-2 md:mb-3">
                   {Array.from({ length: 5 }).map((_, i) => (
                     <Star
                       key={i}
-                      className={`w-3.5 h-3.5 ${i < r.stars ? "fill-warning text-warning" : "text-border"}`}
+                      className={`w-4 h-4 md:w-5 md:h-5 ${i < r.stars ? "fill-warning text-warning" : "text-border"}`}
                     />
                   ))}
                 </div>
 
-                <p className="text-[11px] md:text-xs text-text leading-6 line-clamp-3">{r.text}</p>
+                <p className="text-xs md:text-sm text-text leading-6 md:leading-7 line-clamp-3 md:line-clamp-4 mb-3">
+                  {r.text}
+                </p>
 
-                <div className="flex items-center justify-between mt-3 pt-3 border-t border-border/50">
+                <div className="flex items-center justify-between pt-3 border-t border-border/50">
                   <button
                     onClick={() => toggleHelpful(r.id)}
-                    className={`inline-flex items-center gap-1.5 text-[10px] md:text-[11px] font-bold transition ${
+                    className={`inline-flex items-center gap-1.5 text-[11px] md:text-xs font-bold transition ${
                       helpfulVotes[r.id] ? "text-primary" : "text-text-muted hover:text-primary"
                     }`}
                   >
-                    <ThumbsUp className={`w-3.5 h-3.5 ${helpfulVotes[r.id] ? "fill-primary/20" : ""}`} />
+                    <ThumbsUp className={`w-4 h-4 md:w-5 md:h-5 ${helpfulVotes[r.id] ? "fill-primary/20" : ""}`} />
                     مفید بود ({faDigits(r.helpful + (helpfulVotes[r.id] ? 1 : 0))})
                   </button>
-                  <span className="text-[9px] md:text-[10px] text-text-subtle">اقامت تأییدشده</span>
+                  <span className="text-[10px] md:text-[11px] text-text-subtle">اقامت تأییدشده</span>
                 </div>
               </article>
             ))}

@@ -80,7 +80,10 @@ export default async function HotelsRoute() {
         cities={categoriesData.cities}
         videoSrc="/videos/hotel-intro.mp4"
         videoPoster="/images/categories/video-poster.jpg"
-        basePath="/hotels/category"
+        basePathByLevel={{
+          country: "/hotels/country",
+          city: "/hotels/city",
+        }}
       />
 
       <HotelsPage data={data} />

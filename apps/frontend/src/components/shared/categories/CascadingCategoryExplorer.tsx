@@ -1,20 +1,12 @@
+// src/components/shared/categories/CascadingCategoryExplorer.tsx
 "use client";
 
-import { useState, useMemo, useRef, useEffect, useCallback } from "react";
-import Link from "next/link";
+import { useState, useMemo, useEffect, useRef, useCallback } from "react";
 import Image from "next/image";
-import {
-  FolderOpen,
-  ChevronLeft,
-  ChevronRight,
-  MapPin,
-  Globe,
-  Building2,
-} from "lucide-react";
+import Link from "next/link";
+import { Globe, Building2, MapPin, ChevronLeft, Play, Pause } from "lucide-react";
 import { faDigits } from "@/lib/api/hotels";
-import { useMediaQuery } from "@/hooks/use-media-query"; // ✅ اضافه شد
 
-/* ═══ Types ═══ */
 export interface CategoryLevel1 {
   id: number;
   name: string;
@@ -50,86 +42,25 @@ export interface CascadingCategoryExplorerProps {
   videoSrc?: string;
   videoPoster?: string;
   basePath?: string;
+  basePathByLevel?: {
+    level2?: string;
+    level3?: string;
+  };
   level1Label?: string;
   level2Label?: string;
   level3Label?: string;
   className?: string;
 }
 
-/* ═══ کاروسل با دکمه‌های هوشمند ═══ */
+/* ═══ Carousel ساده ═══ */
 function Carousel({
   children,
-  scrollerClassName = "",
+  scrollerClassName,
 }: {
   children: React.ReactNode;
   scrollerClassName?: string;
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const [canPrev, setCanPrev] = useState(false);
-  const [canNext, setCanNext] = useState(false);
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
-
-  const update = useCallback(() => {
-    const el = ref.current;
-    if (!el) return;
-    const max = el.scrollWidth - el.clientWidth;
-    const pos = Math.abs(el.scrollLeft);
-    setCanPrev(pos > 8);
-    setCanNext(max - pos > 8);
-  }, []);
-
-  useEffect(() => {
-    update();
-    const el = ref.current;
-    if (!el) return;
-    el.addEventListener("scroll", update, { passive: true });
-    window.addEventListener("resize", update);
-    return () => {
-      el.removeEventListener("scroll", update);
-      window.removeEventListener("resize", update);
-    };
-  }, [update]);
-
-  const scroll = (dir: 1 | -1) => {
-    const el = ref.current;
-    if (!el) return;
-    const isRTL = document.documentElement.dir === "rtl";
-    const delta = isRTL ? -dir : dir;
-    const amount = el.clientWidth * 0.98;
-    el.scrollBy({ left: delta * amount, behavior: "smooth" });
-  };
-
-  return (
-    <div className="relative">
-      {mounted && canPrev && (
-        <button
-          onClick={() => scroll(-1)}
-          aria-label="قبلی"
-          className="hidden md:flex absolute start-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 backdrop-blur shadow-lg border border-border items-center justify-center text-text hover:text-primary hover:scale-110 transition"
-        >
-          <ChevronRight className="w-5 h-5" />
-        </button>
-      )}
-
-      <div ref={ref} className={scrollerClassName}>
-        {children}
-      </div>
-
-      {mounted && canNext && (
-        <button
-          onClick={() => scroll(1)}
-          aria-label="بعدی"
-          className="hidden md:flex absolute end-1 top-1/2 -translate-y-1/2 z-20 w-9 h-9 rounded-full bg-white/95 backdrop-blur shadow-lg border border-border items-center justify-center text-text hover:text-primary hover:scale-110 transition"
-        >
-          <ChevronLeft className="w-5 h-5" />
-        </button>
-      )}
-    </div>
-  );
+  return <div className={scrollerClassName}>{children}</div>;
 }
 
 export default function CascadingCategoryExplorer({
@@ -143,25 +74,63 @@ export default function CascadingCategoryExplorer({
   videoSrc,
   videoPoster,
   basePath = "/category",
+  basePathByLevel,
   level1Label = "منطقه",
   level2Label = "کشور",
   level3Label = "شهر",
   className = "",
 }: CascadingCategoryExplorerProps) {
-  // ✅ تشخیص موبایل برای عدم رندر ویدیو
-  const isMobile = useMediaQuery("(max-width: 1023px)");
-
   const [selectedLevel1, setSelectedLevel1] = useState<number>(
     initialLevel1Id ?? levels[0]?.id ?? 0
   );
-
-  const firstLevel2OfLevel1 = useMemo(
-    () => subLevels.find((c) => c.parent_id === selectedLevel1),
-    [subLevels, selectedLevel1]
-  );
-
   const [selectedLevel2, setSelectedLevel2] = useState<number>(
-    initialLevel2Id ?? firstLevel2OfLevel1?.id ?? 0
+    initialLevel2Id ?? 0
+  );
+  const [isMobile, setIsMobile] = useState(false);
+  const [videoPlaying, setVideoPlaying] = useState(false);
+  const videoRef = useRef<HTMLVideoElement>(null);
+
+  useEffect(() => {
+    const check = () => setIsMobile(window.innerWidth < 1024);
+    check();
+    window.addEventListener("resize", check);
+    return () => window.removeEventListener("resize", check);
+  }, []);
+
+  /* انتخاب خودکار اولین country بعد از انتخاب region */
+  useEffect(() => {
+    const first = subLevels.find((c) => c.parent_id === selectedLevel1);
+    if (first && selectedLevel2 !== first.id) {
+      setSelectedLevel2(first.id);
+    } else if (!first) {
+      setSelectedLevel2(0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLevel1]);
+
+  const handleLevel1Select = useCallback((level: CategoryLevel1) => {
+    setSelectedLevel1(level.id);
+  }, []);
+
+  const handleLevel2Select = useCallback((level: CategoryLevel2) => {
+    setSelectedLevel2(level.id);
+  }, []);
+
+  const toggleVideo = () => {
+    if (!videoRef.current) return;
+    if (videoPlaying) {
+      videoRef.current.pause();
+      setVideoPlaying(false);
+    } else {
+      videoRef.current.play();
+      setVideoPlaying(true);
+    }
+  };
+
+  /* فیلترها */
+  const selectedLevel1Name = useMemo(
+    () => levels.find((l) => l.id === selectedLevel1)?.name ?? "",
+    [levels, selectedLevel1]
   );
 
   const filteredLevel2 = useMemo(
@@ -169,69 +138,75 @@ export default function CascadingCategoryExplorer({
     [subLevels, selectedLevel1]
   );
 
+  const selectedLevel2Name = useMemo(
+    () => subLevels.find((c) => c.id === selectedLevel2)?.name ?? "",
+    [subLevels, selectedLevel2]
+  );
+
+  /* ✅ slug کشور انتخاب شده برای ساخت مسیر شهر */
+  const selectedLevel2Slug = useMemo(
+    () => subLevels.find((c) => c.id === selectedLevel2)?.slug ?? "",
+    [subLevels, selectedLevel2]
+  );
+
   const filteredLevel3 = useMemo(
     () => subSubLevels.filter((c) => c.parent_id === selectedLevel2),
     [subSubLevels, selectedLevel2]
   );
 
-  const handleLevel1Select = (level: CategoryLevel1) => {
-    setSelectedLevel1(level.id);
-    const firstLevel2 = subLevels.find((c) => c.parent_id === level.id);
-    setSelectedLevel2(firstLevel2?.id ?? 0);
-  };
-
-  const handleLevel2Select = (level: CategoryLevel2) => {
-    setSelectedLevel2(level.id);
-  };
-
-  const selectedLevel1Name = levels.find((r) => r.id === selectedLevel1)?.name ?? "";
-  const selectedLevel2Name = subLevels.find((c) => c.id === selectedLevel2)?.name ?? "";
+  /* ═══ مسیرهای لینک ═══ */
+  const countryPath = basePathByLevel?.level2 || "/hotels";
 
   return (
     <section className={`ns-container py-8 md:py-12 ${className}`}>
-      {/* ═══ عنوان ═══ */}
-      <div className="mb-6 md:mb-8">
-        <div className="flex items-center gap-2 mb-0">
-          <FolderOpen className="w-5 h-5 md:w-6 md:h-6 text-primary flex-shrink-0" />
-          <h2 className="text-xl md:text-2xl font-extrabold text-text-strong">
-            {title}
-          </h2>
+      {/* Header */}
+      <div className="flex items-center justify-between gap-3 mb-5 md:mb-6">
+        <div className="min-w-0">
+          <h2 className="ns-section-title !mb-1">{title}</h2>
+          <p className="text-xs md:text-sm text-text-muted">{subtitle}</p>
         </div>
-        <p className="text-sm md:text-base text-text-muted mt-2">{subtitle}</p>
       </div>
 
-      {/* ═══ Layout اصلی ═══ */}
-      <div className="flex flex-col lg:flex-row gap-5 lg:gap-6 lg:h-[635px]">
-        {/* ═══ ویدیو - فقط در دسکتاپ رندر می‌شود ═══ */}
-        {videoSrc && !isMobile && (
-          <div className="w-full lg:w-[340px] flex-shrink-0 order-2 lg:order-1">
-            <div className="lg:sticky lg:top-24 lg:h-full">
-              <div className="relative w-full h-[280px] sm:h-[320px] lg:h-full lg:aspect-auto rounded-xl overflow-hidden bg-bg-sec shadow-lg">
-                <video
-                  src={videoSrc}
-                  poster={videoPoster}
-                  autoPlay
-                  muted
-                  loop
-                  playsInline
-                  controls
-                  preload="metadata"
-                  className="w-full h-full object-cover"
-                >
-                  مرورگر شما از ویدیو پشتیبانی نمی‌کند.
-                </video>
-                <div className="absolute top-3 start-3 flex items-center gap-1.5 px-2 py-1 rounded-md bg-black/60 backdrop-blur z-10 pointer-events-none">
-                  <div className="w-1.5 h-1.5 rounded-full bg-danger animate-pulse" />
-                  <span className="text-[10px] font-bold text-white">LIVE</span>
-                </div>
-              </div>
+      {/* Main layout: video + 3 lists */}
+      <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-5 lg:gap-6">
+        {/* Video */}
+        {videoSrc && (
+          <div className={`${isMobile ? "order-2" : ""}`}>
+            <div className="relative aspect-square rounded-[10px] md:rounded-lg overflow-hidden bg-bg-sec border border-border">
+              <video
+                ref={videoRef}
+                src={videoSrc}
+                poster={videoPoster}
+                loop
+                muted
+                playsInline
+                onPlay={() => setVideoPlaying(true)}
+                onPause={() => setVideoPlaying(false)}
+                className="w-full h-full object-cover"
+              />
+              <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent pointer-events-none" />
+              <button
+                onClick={toggleVideo}
+                className="absolute bottom-3 right-3 w-10 h-10 rounded-full bg-white/90 backdrop-blur-sm flex items-center justify-center text-text-strong shadow-lg hover:bg-white transition z-10"
+                aria-label={videoPlaying ? "توقف ویدیو" : "پخش ویدیو"}
+              >
+                {videoPlaying ? (
+                  <Pause className="w-4 h-4" />
+                ) : (
+                  <Play className="w-4 h-4 mr-[-2px]" />
+                )}
+              </button>
             </div>
           </div>
         )}
 
         {/* ═══ 3 لیست ═══ */}
-        <div className={`flex-1 min-w-0 ${videoSrc && !isMobile ? "order-1 lg:order-2" : ""} flex flex-col gap-4 lg:gap-5`}>
-          {/* ═══ سطح 1 (منطقه) ═══ */}
+        <div
+          className={`flex-1 min-w-0 ${
+            videoSrc && !isMobile ? "order-1 lg:order-2" : ""
+          } flex flex-col gap-4 lg:gap-5`}
+        >
+          {/* ═══ سطح 1 (منطقه) — دکمه انتخاب ═══ */}
           <div className="flex-shrink-0">
             <div className="flex items-center justify-between mb-0 gap-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -295,7 +270,7 @@ export default function CascadingCategoryExplorer({
             </div>
           </div>
 
-          {/* ═══ سطح 2 (کشور) ═══ */}
+          {/* ═══ سطح 2 (کشور) — لینک مستقیم به صفحه کشور ═══ */}
           <div className="flex-shrink-0">
             <div className="flex items-center justify-between mb-0 gap-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -320,13 +295,14 @@ export default function CascadingCategoryExplorer({
                   scrollerClassName="flex gap-2 md:gap-3 overflow-x-auto scrollbar-hide pb-2 snap-x snap-mandatory"
                 >
                   {filteredLevel2.map((level) => (
-                    <button
+                    <Link
                       key={level.id}
+                      href={`${countryPath}/${level.slug}`}
                       onClick={() => handleLevel2Select(level)}
-                      className={`relative w-[100px] md:w-[120px] aspect-square flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 snap-start ${
+                      className={`group relative w-[100px] md:w-[120px] aspect-square flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 snap-start ${
                         selectedLevel2 === level.id
                           ? "ring-2 ring-primary shadow-lg"
-                          : "hover:shadow-md"
+                          : "hover:shadow-md hover:-translate-y-0.5"
                       }`}
                     >
                       <Image
@@ -334,7 +310,7 @@ export default function CascadingCategoryExplorer({
                         alt={level.name}
                         fill
                         sizes="120px"
-                        className="object-cover"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
                       />
                       <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent" />
                       {selectedLevel2 === level.id && (
@@ -355,11 +331,11 @@ export default function CascadingCategoryExplorer({
                         </div>
                       )}
                       <div className="absolute bottom-0 inset-x-0 p-1.5 text-white">
-                        <h4 className="text-[11px] md:text-xs font-extrabold line-clamp-1">
+                        <h4 className="text-[11px] md:text-xs font-extrabold line-clamp-1 group-hover:text-primary-lightest transition-colors">
                           {level.name}
                         </h4>
                       </div>
-                    </button>
+                    </Link>
                   ))}
                 </Carousel>
               ) : (
@@ -372,7 +348,7 @@ export default function CascadingCategoryExplorer({
             </div>
           </div>
 
-          {/* ═══ سطح 3 (شهر) ═══ */}
+          {/* ═══ سطح 3 (شهر) — لینک شامل slug کشور ═══ */}
           <div className="flex-1 min-h-0 flex flex-col">
             <div className="flex items-center justify-between mb-0 gap-2">
               <div className="flex items-center gap-2 min-w-0">
@@ -399,7 +375,7 @@ export default function CascadingCategoryExplorer({
                   {filteredLevel3.map((level) => (
                     <Link
                       key={level.id}
-                      href={`${basePath}/${level.slug}`}
+                      href={`${countryPath}/${selectedLevel2Slug}/${level.slug}`}
                       className="group relative w-[200px] md:w-[calc(25%-0.75rem)] aspect-[4/5] md:aspect-auto md:h-[250px] flex-shrink-0 rounded-lg overflow-hidden hover:-translate-y-1 transition-all duration-300 snap-start"
                     >
                       <Image
