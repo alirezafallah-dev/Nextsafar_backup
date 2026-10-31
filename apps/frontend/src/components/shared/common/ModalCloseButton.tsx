@@ -22,7 +22,7 @@ export default function ModalCloseButton({
     <button
       type="button"
       onClick={onClick}
-      className={`w-9 h-9 rounded-lg bg-white hover:bg-danger/10 hover:text-danger flex items-center justify-center transition border border-border cursor-pointer shrink-0 ${className}`}
+      className={`w-9 h-9 rounded-md bg-white hover:bg-danger/10 hover:text-danger flex items-center justify-center transition border border-border cursor-pointer shrink-0 ${className}`}
       aria-label={ariaLabel}
     >
       <X className="w-4 h-4" />

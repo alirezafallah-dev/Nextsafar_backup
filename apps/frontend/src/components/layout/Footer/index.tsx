@@ -12,7 +12,7 @@ export default function Footer() {
       <Newsletter />
 
       {/* ═══ فوتر اصلی ═══ */}
-      <div className="border-t bg-bg-sec border-border pt-6 pb-8">
+      <div className="border-t bg-bg-sec border-border pt-8 pb-8">
         <div className="ns-container">
           <div className="grid grid-cols-1 lg:grid-cols-[minmax(270px,1fr)_minmax(450px,3.2fr)_minmax(180px,0.9fr)] gap-8">
             {/* ─── ستون راست: لوگو + شعار + تماس ─── */}

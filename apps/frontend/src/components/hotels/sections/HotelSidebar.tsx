@@ -29,7 +29,7 @@ export default function HotelSidebar({
   return (
     <aside className="hidden lg:block w-[300px] xl:w-[320px] flex-shrink-0 sticky top-[150px] self-start">
       <div className="space-y-4 md:space-y-5">
-        <div className="bg-white rounded-[10px] md:rounded-lg border border-border overflow-hidden shadow-sm hover:shadow-card-hover transition-shadow duration-500 ease-out">
+        <div className="bg-white rounded-lg border border-border overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-500 ease-out">
           <ListingMap
             points={mapPoints}
             height={180}

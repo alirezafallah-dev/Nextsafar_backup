@@ -172,7 +172,7 @@ export default function HotelAmenities({ hotel, useTestData = true }: Props) {
               >
 
                 <div
-                  className={`w-10 h-10 md:w-11 md:h-11 rounded-full flex items-center justify-center transition-colors ${
+                  className={`w-10 h-10 md:w-11 md:h-11 rounded-md flex items-center justify-center transition-colors ${
                     isActive
                       ? "bg-primary text-white shadow-md shadow-primary/30"
                       : "bg-white border border-border shadow-sm"
@@ -258,7 +258,7 @@ export default function HotelAmenities({ hotel, useTestData = true }: Props) {
                             key={i}
                             className="flex items-center gap-2.5 p-3 rounded-lg bg-bg-sec/50 border border-border/40 hover:border-primary/30 hover:bg-primary/5 transition"
                           >
-                            <div className="w-8 h-8 rounded-lg bg-white border border-border flex items-center justify-center shrink-0">
+                            <div className="w-8 h-8 rounded-md bg-white border border-border flex items-center justify-center shrink-0">
                               <AmenityIcon className="w-4 h-4 text-primary" />
                             </div>
                             <span className="text-xs md:text-sm font-bold text-text leading-4">

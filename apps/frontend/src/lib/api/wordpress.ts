@@ -132,8 +132,6 @@ export function getTermImage(term: any): string {
 }
 
 // ========================== URL Builders ==========================
-/* ✅ FIX: فاصله‌های اضافی حذف + مسیرها هم‌راستا با استاندارد سایت
-   (/visas، /travel-guides، /travel-news — مطابق لینک‌های صفحه اصلی) */
 export function buildPostUrl(post: any): string {
   if (!post) return "#";
   const slug = post.slug;

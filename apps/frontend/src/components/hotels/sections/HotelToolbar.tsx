@@ -38,7 +38,7 @@ export default function HotelToolbar({
         {/* Mobile Filter Button */}
         <button
           onClick={onMobileFilterClick}
-          className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-[10px] md:rounded-lg border border-border bg-white text-xs font-bold hover:border-primary-light hover:shadow-card-hover transition-all duration-500 ease-out"
+          className="lg:hidden flex items-center gap-1.5 px-3 py-2 rounded-lg border border-border bg-white text-xs font-bold hover:border-primary-light hover:shadow-card-hover transition-all duration-500 ease-out"
         >
           <SlidersHorizontal className="w-4 h-4" />
           فیلتر

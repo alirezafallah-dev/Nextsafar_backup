@@ -71,7 +71,7 @@ export default function PlaceCard({
       onMouseEnter={() => onHover(place.key)}
       onMouseLeave={() => onHover(null)}
       onClick={() => onClick(place)}
-      className={`group relative flex gap-3 p-3 rounded-xl border transition-all cursor-pointer ${
+      className={`group relative flex gap-3 p-3 rounded-lg border transition-all cursor-pointer ${
         isActive
           ? "bg-primary/5 border-primary shadow-md ring-2 ring-primary/20"
           : isHovered

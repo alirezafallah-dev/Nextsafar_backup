@@ -72,7 +72,7 @@ export default async function MagazineSection() {
               href={`/travel-guides/${g.slug}`}
               className="flex items-center gap-3 py-3 group"
             >
-              <div className="relative w-20 h-16 md:w-24 md:h-16 rounded-lg overflow-hidden shrink-0 bg-bg-sec">
+              <div className="relative w-20 h-16 md:w-24 md:h-16 rounded-md overflow-hidden shrink-0 bg-bg-sec">
                 {g.image ? (
                   <Image src={g.image} alt={g.title} fill sizes="96px" className="object-cover" />
                 ) : (

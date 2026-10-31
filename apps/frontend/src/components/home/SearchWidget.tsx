@@ -152,7 +152,7 @@ export default function SearchWidget({
                     role="tab"
                     aria-selected={active}
                     onClick={() => setTabId(t.id)}
-                    className={`flex items-center gap-1.5 px-3.5 md:px-4 py-2 rounded-lg text-xs md:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
+                    className={`flex items-center gap-1.5 px-3.5 md:px-4 py-2 rounded-md text-xs md:text-sm font-semibold whitespace-nowrap transition-all cursor-pointer ${
                       active
                         ? "bg-primary text-white shadow-md"
                         : "text-text-muted hover:text-primary-dark hover:bg-primary-lightest"

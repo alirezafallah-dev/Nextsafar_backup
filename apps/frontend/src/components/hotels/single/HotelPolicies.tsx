@@ -34,7 +34,7 @@ export default function HotelPolicies() {
           </div>
         </div>
 
-        <div className="p-5 md:p-6 rounded-[10px] md:rounded-lg border border-border bg-white space-y-2.5">
+        <div className="p-5 md:p-6 rounded-[10px] md:rounded-lg border border-border bg-white hover:border-primary-light hover:shadow-card-hover transition-all duration-500 ease-out space-y-3">
           {RULES_OK.map((r) => (
             <div key={r} className="flex items-center gap-2 text-xs md:text-sm text-text">
               <CheckCircle className="w-4 h-4 md:w-5 md:h-5 text-success shrink-0" /> {r}

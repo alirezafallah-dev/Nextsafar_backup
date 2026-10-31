@@ -166,7 +166,7 @@ export function CityPicker({
         }}
       />
       {open && (
-        <ul className="absolute top-full inset-x-0 mt-2 bg-white rounded-lg border border-border shadow-card-hover overflow-hidden z-40 max-h-72 overflow-y-auto">
+        <ul className="absolute top-full inset-x-0 mt-2 bg-white rounded-md border border-border shadow-card-hover overflow-hidden z-40 max-h-72 overflow-y-auto">
           {filtered.length === 0 ? (
             <li className="px-4 py-3 text-sm text-text-muted text-center">
               نتیجه‌ای یافت نشد

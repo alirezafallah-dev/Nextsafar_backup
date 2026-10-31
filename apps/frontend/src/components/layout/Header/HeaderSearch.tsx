@@ -296,7 +296,7 @@ export default function HeaderSearch({
       <button
         type="button"
         onClick={() => setOpen(true)}
-        className="md:hidden flex items-center justify-center w-10 h-10 rounded-lg text-text-strong transition cursor-pointer"
+        className="md:hidden flex items-center justify-center w-8 h-8 rounded-lg text-text-strong transition cursor-pointer"
         aria-label="جستجو"
       >
         <Search className="w-5 h-5" />

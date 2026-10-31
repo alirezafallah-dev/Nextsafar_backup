@@ -100,7 +100,7 @@ const HotelListItem = memo(function HotelListItem({ hotel, onHover, showPrice = 
     <article
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      className="group relative bg-white rounded-xl overflow-hidden border border-border hover:border-primary/40 hover:shadow-xl transition-all duration-300 flex flex-row h-36 sm:h-44 lg:h-52 w-full cursor-pointer"
+      className="group relative bg-white rounded-lg overflow-hidden border border-border hover:border-primary/40 hover:shadow-card-hover transition-all duration-300 flex flex-row h-36 sm:h-44 lg:h-52 w-full cursor-pointer"
     >
       <div
         className="relative w-30 sm:w-36 md:w-44 lg:w-56 flex-shrink-0 overflow-hidden"
@@ -131,10 +131,10 @@ const HotelListItem = memo(function HotelListItem({ hotel, onHover, showPrice = 
 
         {images.length > 1 && (
           <>
-            <button type="button" onClick={nextImage} className="hidden sm:flex absolute end-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10" aria-label="عکس بعدی">
+            <button type="button" onClick={nextImage} className="hidden sm:flex absolute end-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-sm bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10" aria-label="عکس بعدی">
               <ChevronLeft className="w-3.5 h-3.5" />
             </button>
-            <button type="button" onClick={prevImage} className="hidden sm:flex absolute start-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10" aria-label="عکس قبلی">
+            <button type="button" onClick={prevImage} className="hidden sm:flex absolute start-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-sm bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10" aria-label="عکس قبلی">
               <ChevronRight className="w-3.5 h-3.5" />
             </button>
           </>
@@ -149,7 +149,7 @@ const HotelListItem = memo(function HotelListItem({ hotel, onHover, showPrice = 
         <button
           type="button"
           onClick={handleToggleFavorite}
-          className={`absolute top-2 end-2 w-7 h-7 sm:w-8 sm:h-8 rounded-full backdrop-blur flex items-center justify-center transition-all shadow-md z-10 ${
+          className={`absolute top-2 end-2 w-7 h-7 sm:w-8 sm:h-8 rounded-md backdrop-blur flex items-center justify-center transition-all shadow-md z-10 ${
             isFavorite ? "bg-danger text-white scale-110" : "bg-white/95 text-text-muted hover:text-danger"
           }`}
           aria-label={isFavorite ? "حذف از علاقه‌مندی" : "افزودن به علاقه‌مندی"}
@@ -187,7 +187,7 @@ const HotelListItem = memo(function HotelListItem({ hotel, onHover, showPrice = 
                     {hotel.reviews ? `${faDigits(hotel.reviews)} نظر` : "عالی"}
                   </span>
                 </div>
-                <div className="px-1.5 py-0.5 rounded-md bg-success text-white text-[11px] sm:text-xs font-extrabold shadow-sm">
+                <div className="px-1.5 py-0.5 rounded-sm bg-success text-white text-[11px] sm:text-xs font-extrabold shadow-sm">
                   {faDigits(hotel.rating.toFixed(1))}
                 </div>
               </div>

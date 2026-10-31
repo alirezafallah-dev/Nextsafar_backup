@@ -467,7 +467,7 @@ export default function ListMapSplitView({
   }, [selectedIndex, validItems.length, onClose]);
 
   const btnClass =
-    "w-10 h-10 rounded-xl bg-white/95 backdrop-blur border border-border/50 shadow-lg hover:bg-white hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center text-text-strong hover:text-primary cursor-pointer";
+    "w-8 h-8 rounded-md bg-white/95 backdrop-blur border border-border/50 shadow-lg hover:bg-white hover:shadow-xl hover:scale-105 transition-all flex items-center justify-center text-text-strong hover:text-primary cursor-pointer";
 
   return (
     <div className="w-full h-full flex flex-col bg-white overflow-hidden">
@@ -539,7 +539,7 @@ export default function ListMapSplitView({
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   placeholder="جستجو در نتایج..."
-                  className="w-full ps-9 pe-3 py-2 rounded-lg bg-bg-sec border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
+                  className="w-full ps-9 pe-3 py-2 rounded-md bg-bg-sec border border-border text-sm focus:outline-none focus:ring-2 focus:ring-primary/30 focus:border-primary transition"
                 />
               </div>
             </div>

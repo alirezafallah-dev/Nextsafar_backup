@@ -28,7 +28,7 @@ export default function SimilarHotels({ hotels, showHeader = true }: Props) {
           </div>
           <Link
             href="/hotels"
-            className="flex items-center gap-1.5 shrink-0 whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 rounded-lg border border-border bg-white text-[11px] md:text-xs font-bold text-text-muted hover:border-primary hover:text-primary-dark hover:bg-primary-lightest/30 transition"
+            className="flex items-center gap-1.5 shrink-0 whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 rounded-md border border-border bg-white text-[11px] md:text-xs font-bold text-text-muted hover:border-primary hover:text-primary-dark hover:bg-primary-lightest/30 transition"
           >
             مشاهده همه
             <ArrowLeft className="w-3.5 h-3.5 shrink-0" />

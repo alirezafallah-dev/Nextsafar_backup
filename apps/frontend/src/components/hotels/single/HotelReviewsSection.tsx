@@ -161,7 +161,7 @@ export default function HotelReviewsSection({ hotel }: Props) {
             <span className="text-xs md:text-sm font-bold text-white/70 mb-1">/۱۰</span>
           </div>
 
-          <span className="mt-3 px-4 py-1 rounded-full bg-white text-primary text-[11px] md:text-xs font-black relative">
+          <span className="mt-3 px-4 py-1 rounded-sm bg-white text-primary text-[11px] md:text-xs font-black relative">
             عالی
           </span>
 
@@ -233,7 +233,7 @@ export default function HotelReviewsSection({ hotel }: Props) {
 
                 <div className="flex items-center gap-2.5 mb-3">
                   <div
-                    className={`w-9 h-9 rounded-full bg-gradient-to-br ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]} text-white flex items-center justify-center text-sm font-black shrink-0 shadow-md`}
+                    className={`w-9 h-9 rounded-md bg-gradient-to-br ${AVATAR_GRADIENTS[idx % AVATAR_GRADIENTS.length]} text-white flex items-center justify-center text-sm font-black shrink-0 shadow-md`}
                   >
                     {r.name.charAt(0)}
                   </div>

@@ -81,7 +81,7 @@ function BigCard({ hotel }: { hotel: FeaturedHotel }) {
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/30 to-transparent" />
       <div className="absolute top-4 start-4 z-10">
-        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-gradient-to-r from-primary to-primary-dark text-white text-[11px] shadow-lg">
+        <div className="flex items-center gap-1.5 px-3 py-1.5 rounded-md bg-gradient-to-r from-primary to-primary-dark text-white text-[11px] shadow-lg">
           <Star className="w-3 h-3 fill-white" />
           <span>منتخب سفر بعدی</span>
         </div>
@@ -123,7 +123,7 @@ function BigCard({ hotel }: { hotel: FeaturedHotel }) {
               return (
                 <div
                   key={i}
-                  className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-white/15 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold"
+                  className="flex items-center gap-1 px-2.5 py-1 rounded-md bg-white/15 backdrop-blur-md border border-white/20 text-white text-[11px] font-semibold"
                 >
                   <Icon className="w-3 h-3" />
                   <span>{amenity}</span>
@@ -136,7 +136,7 @@ function BigCard({ hotel }: { hotel: FeaturedHotel }) {
           <span className="group-hover:text-primary-light transition-colors">
             مشاهده و رزرو
           </span>
-          <span className="w-9 h-9 rounded-full bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:bg-primary group-hover:border-primary group-hover:text-white transition-all duration-300">
+          <span className="w-9 h-9 rounded-md bg-white/15 backdrop-blur-md border border-white/20 flex items-center justify-center group-hover:bg-primary group-hover:border-primary group-hover:text-white transition-all duration-300">
             <ArrowLeft className="w-4 h-4" />
           </span>
         </div>
@@ -167,7 +167,7 @@ function SmallCard({ hotel }: { hotel: FeaturedHotel }) {
       )}
       <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/20 to-transparent" />
       <div className="absolute top-3 start-3 z-10">
-        <div className="flex items-center gap-1 px-2 py-1 rounded-lg bg-gradient-to-r from-primary to-primary-dark text-white text-[10px] shadow">
+        <div className="flex items-center gap-1 px-2 py-1 rounded-sm bg-gradient-to-r from-primary to-primary-dark text-white text-[10px] shadow">
           <Star className="w-2.5 h-2.5 fill-white" />
           <span>منتخب</span>
         </div>

@@ -27,7 +27,7 @@ export function MapControls({
   onFullscreen,
   showFullscreen = true,
 }: MapControlsProps) {
-  const btn = compact ? "w-8 h-8 rounded-lg" : "w-10 h-10 rounded-xl";
+  const btn = compact ? "w-8 h-8 rounded-md" : "w-8 h-8 rounded-md";
   const icon = compact ? "w-3.5 h-3.5" : "w-4 h-4";
   const gap = compact ? "gap-1.5" : "gap-2";
   const pad = compact ? "start-3 top-3" : "start-4 top-4";

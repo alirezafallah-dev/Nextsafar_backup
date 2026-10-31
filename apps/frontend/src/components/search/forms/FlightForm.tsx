@@ -118,11 +118,11 @@ export default function FlightForm({
     <form onSubmit={submit} className="flex flex-col gap-3">
       {/* نوع سفر + کابین + راهنما */}
       <div className="flex items-center gap-3 flex-wrap">
-        <div className="inline-flex rounded-lg border border-border bg-bg-sec p-1 gap-1">
+        <div className="inline-flex rounded-md border border-border bg-bg-sec p-1 gap-1">
           <button
             type="button"
             onClick={() => setTripType("one")}
-            className={`px-4 py-1.5 rounded-md text-xs font-bold transition cursor-pointer ${
+            className={`px-4 py-1.5 rounded-sm text-xs font-bold transition cursor-pointer ${
               tripType === "one"
                 ? "bg-white text-primary-dark shadow-sm"
                 : "text-text-muted hover:text-text-strong"
@@ -133,7 +133,7 @@ export default function FlightForm({
           <button
             type="button"
             onClick={() => setTripType("round")}
-            className={`px-4 py-1.5 rounded-md text-xs font-bold transition cursor-pointer ${
+            className={`px-4 py-1.5 rounded-sm text-xs font-bold transition cursor-pointer ${
               tripType === "round"
                 ? "bg-white text-primary-dark shadow-sm"
                 : "text-text-muted hover:text-text-strong"
@@ -146,7 +146,7 @@ export default function FlightForm({
         <select
           value={cabin}
           onChange={(e) => setCabin(e.target.value)}
-          className="h-9 px-3 rounded-lg border border-border bg-white text-xs font-bold text-text-strong outline-none focus:border-primary cursor-pointer"
+          className="h-9 px-3 rounded-md border border-border bg-white text-xs font-bold text-text-strong outline-none focus:border-primary cursor-pointer"
           aria-label="کلاس پرواز"
         >
           <option value="economy">اکونومی</option>

@@ -174,7 +174,7 @@ function PaginationControls({
         {hasMore && (
           <button
             onClick={onLoadMore}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-[10px] md:rounded-lg bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-all duration-500 ease-out cursor-pointer group hover:shadow-md"
+            className="flex items-center gap-2 px-5 py-2.5 md:rounded-md bg-primary/10 hover:bg-primary/20 text-primary font-bold text-sm transition-all duration-500 ease-out cursor-pointer group hover:shadow-md"
           >
             <Eye className="w-4 h-4" />
             مشاهده بیشتر
@@ -191,7 +191,7 @@ function PaginationControls({
         {hasMore && remainingCount > 10 && (
           <button
             onClick={onShowAll}
-            className="flex items-center gap-2 px-5 py-2.5 rounded-[10px] md:rounded-lg border border-border hover:border-primary-light bg-white hover:bg-bg-sec text-text-strong font-bold text-sm transition-all duration-500 ease-out cursor-pointer hover:shadow-md"
+            className="flex items-center gap-2 px-5 py-2.5 md:rounded-md border border-border hover:border-primary-light bg-white hover:bg-bg-sec text-text-strong font-bold text-sm transition-all duration-500 ease-out cursor-pointer hover:shadow-md"
           >
             نمایش همه {faDigits(totalCount)} هتل
           </button>
@@ -222,7 +222,7 @@ function PaginationControls({
 /* ═══ حالت خالی ═══ */
 function EmptyState() {
   return (
-    <div className="rounded-[10px] md:rounded-lg border-2 border-dashed border-border bg-bg-sec/30 p-12 text-center">
+    <div className="rounded-lg border-2 border-dashed border-border bg-bg-sec/30 p-12 text-center">
       <BedDouble className="w-12 h-12 text-primary/50 mx-auto mb-4" />
       <h3 className="text-lg font-extrabold text-text-strong mb-2">
         هتلی یافت نشد

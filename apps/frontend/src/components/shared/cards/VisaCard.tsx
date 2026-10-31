@@ -44,7 +44,7 @@ export default function VisaCard({
           </div>
         )}
         {category && (
-          <span className="absolute top-2 start-2 px-2 py-1 rounded-lg bg-black/50 backdrop-blur-sm text-white text-[9px] font-bold z-10">
+          <span className="absolute top-2 start-2 px-2 py-1 rounded-md bg-black/50 backdrop-blur-sm text-white text-[9px] font-bold z-10">
             {category}
           </span>
         )}

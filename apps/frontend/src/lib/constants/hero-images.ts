@@ -27,7 +27,7 @@ export const HERO_TABS: Record<string, HeroTabConfig> = {
   destination: {
     title: "به کجا می‌خواهید بروید؟",
     subtitle: "صدها مقصد منتظر کشف شدن هستند",
-    images: ["/images/hero/Travel-Destination.png"],
+    images: ["/images/hero/Travel-Destinations.png"],
   },
   visa: {
     title: "ویزا بدون دردسر",

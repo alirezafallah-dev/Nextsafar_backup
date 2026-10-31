@@ -83,7 +83,7 @@ export default function HotelSidebarMap({ hotel }: Props) {
           onClick={() => setOpenModal(true)}
           className="absolute bottom-3 left-1/2 -translate-x-1/2 z-[500]
                      inline-flex items-center gap-1.5
-                     px-4 py-2 rounded-full
+                     px-4 py-2 rounded-md
                      bg-white border border-border/60
                      text-[11px] font-bold text-text-strong
                      hover:border-primary hover:text-primary

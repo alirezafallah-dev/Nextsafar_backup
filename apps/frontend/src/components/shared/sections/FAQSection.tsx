@@ -38,7 +38,7 @@ function FAQAccordionItem({
 
   return (
     <div
-      className={`rounded-xl border transition-all duration-200 ${
+      className={`rounded-lg border transition-all duration-200 ${
         open
           ? "border-primary/40 bg-primary/5 shadow-sm"
           : "border-border/60 bg-white hover:border-border"
@@ -174,7 +174,7 @@ export default function FAQSection({
 
       {/* ═══ فوتر با اطلاعات پشتیبانی ═══ */}
       {supportText && (
-        <div className="mt-4 px-5 py-4 bg-gradient-to-l from-primary/8 to-primary/3 rounded-2xl border border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="mt-4 px-5 py-4 bg-gradient-to-l from-primary/8 to-primary/3 rounded-lg border border-primary/10 flex flex-col sm:flex-row items-center justify-between gap-3">
           <div className="flex items-center gap-3">
             <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
               <MessageCircle className="w-4 h-4 text-primary" />
@@ -185,7 +185,7 @@ export default function FAQSection({
           {supportPhone && (
             <a
               href={`tel:${supportPhone}`}
-              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-sm hover:shadow-md transition-all group whitespace-nowrap"
+              className="inline-flex items-center gap-1.5 px-4 py-2 rounded-sm bg-primary hover:bg-primary-dark text-white font-bold text-xs shadow-sm hover:shadow-md transition-all group whitespace-nowrap"
             >
               <Phone className="w-3.5 h-3.5 group-hover:rotate-12 transition-transform" />
               تماس با پشتیبانی

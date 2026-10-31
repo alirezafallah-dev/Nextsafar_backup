@@ -2,7 +2,7 @@
 "use client";
 
 import Link from "next/link";
-import { MessageCircle, ArrowLeft } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 import type { Hotel } from "@/types/hotel";
 import HotelHeader from "./HotelHeader";
 import HotelHeroGallery from "./HotelHeroGallery";
@@ -16,6 +16,7 @@ import HotelPolicies from "./HotelPolicies";
 import FAQSection from "@/components/shared/sections/FAQSection";
 import type { FAQItem } from "@/components/shared/sections/FAQSection";
 import SimilarHotels from "./SimilarHotels";
+import { WeatherWidget } from "@/components/shared/weather";
 import hotelsData from "@/data/hotels.json";
 
 const TABS = [
@@ -50,9 +51,9 @@ export default function HotelDetailPage({ hotel }: Props) {
       <div className="ns-container pb-8 md:pb-12">
         <div className="grid grid-cols-1 lg:grid-cols-[1fr_360px] gap-6 items-start">
 
-          {/* MAIN COLUMN */}
+          {/* ═══ MAIN COLUMN ═══ */}
           <div className="min-w-0">
-            
+
             {/* گالری */}
             <HotelHeroGallery
               images={hotel.gallery?.length ? hotel.gallery : [hotel.image]}
@@ -61,7 +62,7 @@ export default function HotelDetailPage({ hotel }: Props) {
 
             {/* ═══ Container برای تب‌ها و محتوا (تا Policies) ═══ */}
             <div className="space-y-8 md:space-y-12">
-              
+
               {/* تب‌ها — sticky در این container */}
               <nav className="sticky top-[135px] z-30 bg-white/95 backdrop-blur -mx-4 md:-mx-6 px-4 md:px-6">
                 <div className="flex items-center justify-center border-b border-border gap-4 md:gap-8 overflow-x-auto scrollbar-hide ns-tablist-scroll">
@@ -90,6 +91,16 @@ export default function HotelDetailPage({ hotel }: Props) {
               <HotelPolicies />
             </div>
 
+            {/* ═══ آب و هوا — فاصله مناسب از Policies ═══ */}
+            <section className="mt-8 md:mt-12">
+              <WeatherWidget
+                lat={hotel.coordinates.lat}
+                lng={hotel.coordinates.lng}
+                cityName={hotel.city}
+                showForecast
+              />
+            </section>
+
             {/* ═══ بخش FAQ — خارج از container sticky ═══ */}
             <div className="mt-8 md:mt-12">
               <section>
@@ -101,6 +112,7 @@ export default function HotelDetailPage({ hotel }: Props) {
                     </p>
                   </div>
                 </div>
+
                 <FAQSection
                   items={HOTEL_FAQ_ITEMS}
                   supportText="سوال دیگه‌ای دارید؟ تیم پشتیبانی ما ۲۴ ساعته آماده پاسخگویی است"
@@ -122,7 +134,7 @@ export default function HotelDetailPage({ hotel }: Props) {
                   </div>
                   <Link
                     href="/hotels"
-                    className="flex items-center gap-1.5 shrink-0 whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 rounded-lg border border-border bg-white text-[11px] md:text-xs font-bold text-text-muted hover:border-primary hover:text-primary-dark hover:bg-primary-lightest/30 transition"
+                    className="flex items-center gap-1.5 shrink-0 whitespace-nowrap px-3 py-1.5 md:px-4 md:py-2 rounded-sm border border-border bg-white text-[11px] md:text-xs font-bold text-text-muted hover:border-primary hover:text-primary-dark hover:bg-primary-lightest/30 transition"
                   >
                     مشاهده همه
                     <ArrowLeft className="w-3.5 h-3.5 shrink-0" />
@@ -133,31 +145,9 @@ export default function HotelDetailPage({ hotel }: Props) {
             )}
           </div>
 
-          {/* SIDEBAR */}
+          {/* ═══ SIDEBAR ═══ */}
           <BookingSidebar hotel={hotel} />
-        </div>
-      </div>
 
-      {/* CTA پایین */}
-      <div className="bg-bg-sec border-t border-border">
-        <div className="ns-container py-6 md:py-8 flex flex-col md:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary/10 border border-primary/20 flex items-center justify-center">
-              <MessageCircle className="w-5 h-5 md:w-6 md:h-6 text-primary" />
-            </div>
-            <div>
-              <h3 className="text-sm md:text-base font-extrabold text-text-strong">
-                آماده سفر به {hotel.city} هستید؟
-              </h3>
-              <p className="text-xs md:text-sm text-text-muted mt-0.5">
-                همین حالا بهترین قیمت را برای اقامت خود دریافت کنید.
-              </p>
-            </div>
-          </div>
-          <Link href="/hotels" className="inline-flex items-center gap-2 px-5 md:px-6 py-2.5 md:py-3 rounded-lg bg-primary hover:bg-primary-dark text-white font-bold text-xs md:text-sm shadow-md hover:shadow-lg transition-all whitespace-nowrap">
-            مشاهده هتل‌ها
-            <ArrowLeft className="w-4 h-4" />
-          </Link>
         </div>
       </div>
     </div>

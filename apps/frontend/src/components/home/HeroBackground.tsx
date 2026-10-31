@@ -1,18 +1,10 @@
 "use client";
+
 import { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { HERO_TABS } from "@/lib/constants/hero-images";
 
-/* ═══════════════════════════════════════════════════════
-   ✅ نسخه بهینه:
-   - فقط تصویر تب فعال render می‌شه (گیت موبایل در HomeHero)
-   - LCP: preload رسانه‌ای در page.tsx (فقط دسکتاپ)
-   - چرخش: تصویر بعدی از قبل preload
-   - سوئیچ تب: تصویر اول تب‌های دیگر در idle preload
-   - کراس‌فید: لایه قبلی زیر می‌مونه تا fade-in جدید
-═══════════════════════════════════════════════════════ */
-
-/* ✅ Helper امن برای preload (بدون درگیری با import next/image) */
+/* ✅ Helper امن برای preload */
 function preloadImage(src: string) {
   if (typeof window === "undefined") return;
   const img = document.createElement("img");
@@ -21,7 +13,6 @@ function preloadImage(src: string) {
 
 export default function HeroBackground({ activeTab }: { activeTab: string }) {
   const [i, setI] = useState(0);
-  const [prevSrc, setPrevSrc] = useState<string | null>(null);
   const lastSrc = useRef<string>("");
 
   const activeImages = HERO_TABS[activeTab]?.images ?? [];
@@ -39,18 +30,6 @@ export default function HeroBackground({ activeTab }: { activeTab: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeTab, activeImages.length]);
 
-  /* کراس‌فید: تصویر قبلی زیر می‌مونه تا تصویر جدید fade-in بشه */
-  useEffect(() => {
-    if (!activeSrc || lastSrc.current === activeSrc) return;
-    const old = lastSrc.current;
-    lastSrc.current = activeSrc;
-    if (old) {
-      setPrevSrc(old);
-      const t = setTimeout(() => setPrevSrc(null), 600);
-      return () => clearTimeout(t);
-    }
-  }, [activeSrc]);
-
   /* preload تصویر بعدیِ چرخش */
   useEffect(() => {
     const next = activeImages[(i + 1) % activeImages.length];
@@ -58,7 +37,7 @@ export default function HeroBackground({ activeTab }: { activeTab: string }) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [i, activeTab]);
 
-  /* idle: preload تصویر اول تب‌های دیگر (سوئیچ آنی، بعد از LCP) */
+  /* idle: preload تصویر اول تب‌های دیگر */
   useEffect(() => {
     const idle: (cb: () => void) => number =
       "requestIdleCallback" in window
@@ -80,20 +59,8 @@ export default function HeroBackground({ activeTab }: { activeTab: string }) {
   }, [activeTab]);
 
   return (
-    <div className="absolute inset-0 bg-transparent">
-      {/* لایه قبلی برای کراس‌فید */}
-      {prevSrc && (
-        <Image
-          src={prevSrc}
-          alt=""
-          fill
-          sizes="100vw"
-          quality={85}
-          className="object-contain object-top"
-          aria-hidden
-        />
-      )}
-      {/* لایه فعال — ✅ object-contain: کامل / object-top: چسبیده به بالا */}
+    <div className="absolute inset-0 bg-white">
+      {/* فقط لایه فعال — بدون افکت */}
       {activeSrc && (
         <Image
           key={activeSrc}
@@ -104,7 +71,7 @@ export default function HeroBackground({ activeTab }: { activeTab: string }) {
           quality={85}
           loading="eager"
           fetchPriority="high"
-          className="object-contain object-top animate-ns-fade"
+          className="object-contain object-top"
         />
       )}
     </div>

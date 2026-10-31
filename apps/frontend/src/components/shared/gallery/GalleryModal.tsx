@@ -125,7 +125,7 @@ export default function GalleryModal({
         <div className="w-full h-full bg-white overflow-hidden flex flex-col shadow-2xl rounded-xl animate-ns-fade">
 
           {/* ═══ Header — چیدمان نهایی ═══ */}
-          <div className="flex items-center justify-between px-4 md:px-5 py-2.5 md:py-3 border-b border-border bg-white shrink-0">
+          <div className="flex items-center justify-between px-4 md:px-5 py-3 md:py-3 border-b border-border bg-white shrink-0">
 
             {/* ══ سمت راست (در RTL) — Actions + Back button ══ */}
             <div className="flex items-center shrink-0 gap-1 md:gap-1.5">
@@ -134,7 +134,7 @@ export default function GalleryModal({
               {view === "single" && (
                 <button
                   onClick={() => setView("grid")}
-                  className="flex items-center gap-1.5 px-2.5 md:px-3 py-2.5 rounded-lg bg-bg-sec hover:bg-border transition"
+                  className="flex items-center gap-1.5 px-2.5 md:px-3 py-2.5 rounded-md bg-bg-sec hover:bg-border transition"
                 >
                   <ArrowRight className="w-3.5 h-3.5 text-text-strong" />
                   <span className="text-[11px] md:text-xs font-bold text-text-strong hidden sm:inline">
@@ -148,7 +148,7 @@ export default function GalleryModal({
                 <>
                   <button
                     onClick={() => setIsFavorite(!isFavorite)}
-                    className={`w-9 h-9 rounded-full items-center justify-center transition hidden md:flex ${
+                    className={`w-9 h-9 rounded-md items-center justify-center transition hidden md:flex ${
                       isFavorite ? "bg-danger/10 text-danger" : "hover:bg-bg-sec text-text-muted"
                     }`}
                     aria-label="ذخیره"
@@ -157,14 +157,14 @@ export default function GalleryModal({
                   </button>
                   <button
                     onClick={handleShare}
-                    className="w-9 h-9 rounded-full hover:bg-bg-sec items-center justify-center text-text-muted transition hidden md:flex"
+                    className="w-9 h-9 rounded-md hover:bg-bg-sec items-center justify-center text-text-muted transition hidden md:flex"
                     aria-label="اشتراک"
                   >
                     <Share2 className="w-4 h-4" />
                   </button>
                   <button
                     onClick={handleDownload}
-                    className="w-9 h-9 rounded-full hover:bg-bg-sec items-center justify-center text-text-muted transition hidden md:flex"
+                    className="w-9 h-9 rounded-md hover:bg-bg-sec items-center justify-center text-text-muted transition hidden md:flex"
                     aria-label="دانلود"
                   >
                     <Download className="w-4 h-4" />
@@ -172,7 +172,7 @@ export default function GalleryModal({
                 </>
               )}
               {view === "single" ? (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-bg-sec text-[10px] md:text-[11px] font-bold text-text">
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-bg-sec text-[10px] md:text-[11px] font-bold text-text">
                   <span className="text-primary">{activeIndex + 1}</span>
                   <span className="text-text-subtle mx-0.5">از</span>
                   <span>{images.length}</span>
@@ -190,7 +190,7 @@ export default function GalleryModal({
             <div className="flex items-center gap-1 md:gap-1.5 shrink-0">
               {/* Badge "X عکس" — فقط در grid */}
               {view === "grid" && (
-                <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-bg-sec text-[10px] md:text-[11px] font-bold text-text">
+                <div className="flex items-center gap-1 px-2.5 py-1 rounded-sm bg-bg-sec text-[10px] md:text-[11px] font-bold text-text">
                   <Grid3x3 className="w-3 h-3" />
                   <span>{images.length} عکس</span>
                 </div>
@@ -229,12 +229,12 @@ export default function GalleryModal({
                           />
                           <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-colors flex items-center justify-center">
                             <div className="opacity-0 group-hover:opacity-100 transition-opacity">
-                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-xl">
+                              <div className="w-10 h-10 md:w-12 md:h-12 rounded-md bg-white/95 backdrop-blur-sm flex items-center justify-center shadow-xl">
                                 <ChevronLeft className="w-5 h-5 md:w-6 md:h-6 text-text-strong" />
                               </div>
                             </div>
                           </div>
-                          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-full bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold">
+                          <div className="absolute top-2 right-2 px-2 py-0.5 rounded-sm bg-black/60 backdrop-blur-sm text-white text-[10px] font-semibold">
                             {i + 1}
                           </div>
                           {img.caption && (
@@ -269,7 +269,7 @@ export default function GalleryModal({
 
                 <button
                   onClick={prevImage}
-                  className="absolute right-2 md:right-5 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/95 hover:bg-white backdrop-blur-sm shadow-xl flex items-center justify-center text-text-strong transition-all hover:scale-110 z-10"
+                  className="absolute right-2 md:right-5 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-md bg-white/95 hover:bg-white backdrop-blur-sm shadow-xl flex items-center justify-center text-text-strong transition-all hover:scale-110 z-10"
                   aria-label="عکس قبلی"
                 >
                   <ChevronRight className="w-5 h-5 md:w-6 md:h-6" />
@@ -277,7 +277,7 @@ export default function GalleryModal({
 
                 <button
                   onClick={nextImage}
-                  className="absolute left-2 md:left-5 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-full bg-white/95 hover:bg-white backdrop-blur-sm shadow-xl flex items-center justify-center text-text-strong transition-all hover:scale-110 z-10"
+                  className="absolute left-2 md:left-5 top-1/2 -translate-y-1/2 w-10 h-10 md:w-12 md:h-12 rounded-md bg-white/95 hover:bg-white backdrop-blur-sm shadow-xl flex items-center justify-center text-text-strong transition-all hover:scale-110 z-10"
                   aria-label="عکس بعدی"
                 >
                   <ChevronLeft className="w-5 h-5 md:w-6 md:h-6" />

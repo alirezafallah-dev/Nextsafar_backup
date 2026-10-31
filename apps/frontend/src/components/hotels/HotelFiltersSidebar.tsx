@@ -158,7 +158,7 @@ export default function HotelFiltersSidebar({
 
   // ═══ حالت عادی (دسکتاپ): با wrapper کامل ═══
   return (
-    <aside className="bg-white rounded-[10px] md:rounded-lg border border-border overflow-hidden shadow-sm hover:shadow-card-hover transition-shadow duration-500 ease-out text-[13px]">
+    <aside className="bg-white rounded-lg border border-border overflow-hidden shadow-card hover:shadow-card-hover transition-shadow duration-500 ease-out text-[13px]">
       {/* Header */}
       <div className="flex items-center justify-between px-4 py-3 border-b border-border">
         <div className="flex items-center gap-1.5">

@@ -1,4 +1,5 @@
 "use client";
+
 import { useEffect, useRef, useState, useCallback, memo } from "react";
 import { MapPin } from "lucide-react";
 import { loadLeaflet, waitForSize } from "@/lib/map-loader";
@@ -24,6 +25,8 @@ interface ListingMapProps {
   onPointClick?: (key: string) => void;
   onPointHover?: (key: string | null) => void;
   className?: string;
+  /** نمایش دکمه "نمایش روی نقشه" - پیش‌فرض: true */
+  showFullscreenButton?: boolean;
 }
 
 const ListingMap = memo(function ListingMap({
@@ -33,6 +36,7 @@ const ListingMap = memo(function ListingMap({
   onPointClick,
   onPointHover,
   className = "",
+  showFullscreenButton = true, // ✅ prop جدید با مقدار پیش‌فرض
 }: ListingMapProps) {
   const mapRef = useRef<HTMLDivElement>(null);
   const mapInstance = useRef<any>(null);
@@ -309,8 +313,8 @@ const ListingMap = memo(function ListingMap({
           />
         )}
 
-        {/* دکمه نمایش روی نقشه — سفید، وسط پایین */}
-        {isLoaded && (
+        {/* ✅ دکمه نمایش روی نقشه — شرطی با showFullscreenButton */}
+        {isLoaded && showFullscreenButton && (
           <button
             type="button"
             onClick={() => setIsFullscreen(true)}

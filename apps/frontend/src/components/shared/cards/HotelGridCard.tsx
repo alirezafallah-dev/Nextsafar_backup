@@ -69,7 +69,7 @@ const HotelGridCard = memo(function HotelGridCard({ hotel, showPrice = false }: 
   };
 
   return (
-    <article className="group bg-white rounded-[10px] md:rounded-lg border border-border hover:border-primary-light hover:shadow-card-hover transition-all duration-500 ease-out overflow-hidden cursor-pointer w-full">
+    <article className="group bg-white rounded-lg border border-border hover:border-primary-light hover:shadow-card-hover transition-all duration-500 ease-out overflow-hidden cursor-pointer w-full">
       {/* ✅ aspect-[16/9] برای موبایل (کوتاه‌تر)، aspect-[4/3] برای دسکتاپ */}
       <div
         className="relative aspect-[16/9] md:aspect-[4/3] overflow-hidden"
@@ -103,7 +103,7 @@ const HotelGridCard = memo(function HotelGridCard({ hotel, showPrice = false }: 
             <button
               type="button"
               onClick={nextImage}
-              className="hidden sm:flex absolute end-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
+              className="hidden sm:flex absolute end-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
               aria-label="عکس بعدی"
             >
               <ChevronLeft className="w-3.5 h-3.5" />
@@ -111,7 +111,7 @@ const HotelGridCard = memo(function HotelGridCard({ hotel, showPrice = false }: 
             <button
               type="button"
               onClick={prevImage}
-              className="hidden sm:flex absolute start-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-full bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
+              className="hidden sm:flex absolute start-2 top-1/2 -translate-y-1/2 w-7 h-7 rounded-md bg-white/95 backdrop-blur items-center justify-center text-text-strong hover:bg-white transition-all opacity-0 group-hover:opacity-100 shadow-md z-10"
               aria-label="عکس قبلی"
             >
               <ChevronRight className="w-3.5 h-3.5" />
@@ -128,7 +128,7 @@ const HotelGridCard = memo(function HotelGridCard({ hotel, showPrice = false }: 
         <button
           type="button"
           onClick={handleToggleFavorite}
-          className={`absolute top-2 end-2 w-8 h-8 rounded-full backdrop-blur flex items-center justify-center transition-all shadow-md z-10 ${
+          className={`absolute top-2 end-2 w-8 h-8 rounded-md backdrop-blur flex items-center justify-center transition-all shadow-md z-10 ${
             isFavorite
               ? "bg-danger text-white scale-110"
               : "bg-white/95 text-text-muted hover:text-danger"
@@ -160,7 +160,7 @@ const HotelGridCard = memo(function HotelGridCard({ hotel, showPrice = false }: 
             )}
           </div>
           {hotel.rating > 0 && (
-            <div className="px-1.5 py-0.5 rounded-md bg-success text-white text-[11px] font-extrabold shadow-sm shrink-0">
+            <div className="px-1.5 py-0.5 rounded-sm bg-success text-white text-[11px] font-extrabold shadow-sm shrink-0">
               {faDigits(hotel.rating.toFixed(1))}
             </div>
           )}

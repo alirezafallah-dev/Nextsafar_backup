@@ -64,7 +64,7 @@ export function CompactArticle({
 }: CompactArticleProps) {
   return (
     <Link href={`${basePath}/${slug}`} className="flex items-center gap-3 py-3 group cursor-pointer">
-      <div className="relative w-20 h-16 md:w-24 md:h-16 rounded-lg overflow-hidden shrink-0 bg-bg-sec">
+      <div className="relative w-20 h-16 md:w-24 md:h-16 rounded-md overflow-hidden shrink-0 bg-bg-sec">
         {image ? (
           <Image src={image} alt={title} fill sizes="96px" className="object-cover" />
         ) : (

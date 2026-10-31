@@ -48,7 +48,7 @@ export default function HotelLocationMap({ hotel }: Props) {
 
         <button
           onClick={() => setOpenModal(true)}
-          className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-white shadow-md border border-border text-[11px] font-bold text-text-strong hover:text-primary transition z-[500]"
+          className="absolute bottom-3 left-1/2 -translate-x-1/2 inline-flex items-center gap-1.5 px-4 py-2 rounded-md bg-white shadow-md border border-border text-[11px] font-bold text-text-strong hover:text-primary transition z-[500]"
         >
           <MapPin className="w-3.5 h-3.5 text-primary" />
           نمایش روی نقشه

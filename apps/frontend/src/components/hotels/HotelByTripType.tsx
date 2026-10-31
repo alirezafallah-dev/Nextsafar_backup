@@ -74,7 +74,7 @@ export default function HotelByTripType({ hotels }: Props) {
             <button
               key={tab.id}
               onClick={() => setActiveTab(tab.id)}
-              className={`px-4 py-2 rounded-lg text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-300 cursor-pointer ${
+              className={`px-4 py-2 rounded-md text-xs md:text-sm font-bold whitespace-nowrap transition-all duration-300 cursor-pointer ${
                 activeTab === tab.id
                   ? "bg-primary text-white shadow-md"
                   : "text-text-muted hover:text-primary-dark"

@@ -206,7 +206,7 @@ export default function CascadingCategoryExplorer({
         {videoSrc && !isMobile && (
           <div className="w-full lg:w-[340px] flex-shrink-0 order-2 lg:order-1">
             <div className="lg:sticky lg:top-24 lg:h-full">
-              <div className="relative w-full h-[280px] sm:h-[320px] lg:h-full lg:aspect-auto rounded-2xl overflow-hidden bg-bg-sec shadow-lg">
+              <div className="relative w-full h-[280px] sm:h-[320px] lg:h-full lg:aspect-auto rounded-xl overflow-hidden bg-bg-sec shadow-lg">
                 <video
                   src={videoSrc}
                   poster={videoPoster}
@@ -253,7 +253,7 @@ export default function CascadingCategoryExplorer({
                   <button
                     key={level.id}
                     onClick={() => handleLevel1Select(level)}
-                    className={`relative w-[90px] md:w-[100px] aspect-square flex-shrink-0 rounded-xl overflow-hidden transition-all duration-300 snap-start ${
+                    className={`relative w-[90px] md:w-[100px] aspect-square flex-shrink-0 rounded-md overflow-hidden transition-all duration-300 snap-start ${
                       selectedLevel1 === level.id
                         ? "ring-2 ring-primary shadow-lg"
                         : "hover:shadow-md"
@@ -323,7 +323,7 @@ export default function CascadingCategoryExplorer({
                     <button
                       key={level.id}
                       onClick={() => handleLevel2Select(level)}
-                      className={`relative w-[100px] md:w-[120px] aspect-square flex-shrink-0 rounded-xl overflow-hidden transition-all duration-300 snap-start ${
+                      className={`relative w-[100px] md:w-[120px] aspect-square flex-shrink-0 rounded-lg overflow-hidden transition-all duration-300 snap-start ${
                         selectedLevel2 === level.id
                           ? "ring-2 ring-primary shadow-lg"
                           : "hover:shadow-md"
@@ -400,7 +400,7 @@ export default function CascadingCategoryExplorer({
                     <Link
                       key={level.id}
                       href={`${basePath}/${level.slug}`}
-                      className="group relative w-[200px] md:w-[calc(25%-0.75rem)] aspect-[4/5] md:aspect-auto md:h-[250px] flex-shrink-0 rounded-xl overflow-hidden hover:-translate-y-1 transition-all duration-300 snap-start"
+                      className="group relative w-[200px] md:w-[calc(25%-0.75rem)] aspect-[4/5] md:aspect-auto md:h-[250px] flex-shrink-0 rounded-lg overflow-hidden hover:-translate-y-1 transition-all duration-300 snap-start"
                     >
                       <Image
                         src={level.image}

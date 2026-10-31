@@ -21,8 +21,7 @@ export default function HomeHero() {
 
       {/* ═══ هیرو دسکتاپ ═══ */}
       <div className="ns-container">
-        <div className="relative hidden md:block w-full aspect-[2172/650]">
-          {/* ✅ بدون شرط isDesktop - همیشه mount شود */}
+        <div className="relative hidden md:block w-full aspect-[16/7] lg:aspect-[21/8]">
           <HeroBackground activeTab={tabId} />
         </div>
       </div>
